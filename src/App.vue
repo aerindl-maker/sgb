@@ -25,6 +25,16 @@
 			msg-class="position-fixed top-0 left-0 mt-11 ml-n1 bg-secondary"
 			v-model="messages"
 		></ToastQueue>
+		<UpdateDialog
+			v-if="Capacitor.isNativePlatform()"
+			:version
+			:mismatch
+			:persistent="version.required"
+			:hide-cancel="version.required"
+        	v-model="versionDialog"
+			@cancel="onVersionCancel"
+			@update="onUpdateClicked"
+		></UpdateDialog>
 	</v-app>
 </template>
 
@@ -33,13 +43,14 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import AuthLayout from './layouts/AuthLayout.vue'
 import HomeLayout from './layouts/HomeLayout.vue'
 import ToastQueue from '@/components/ToastQueue.vue'
+import UpdateDialog from './components/UpdateDialog.vue'
 import useToast from '@/composables/use-toast'
 import { useTheme } from 'vuetify'
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { useAuthStore } from './stores/auth'
 import { usePushStore } from './stores/push'
-import { onMounted, ref, watch, type Component } from 'vue'
+import { onMounted, reactive, ref, watch, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import useWebsocket from './composables/use-websocket'
 import { useReadingStore } from './stores/reading'
@@ -49,6 +60,9 @@ import { PushNotifications, type PushNotificationSchema } from '@capacitor/push-
 import { useServerStore } from './stores/server'
 import { storeToRefs } from 'pinia'
 import z from 'zod'
+import { useVersionStore } from './stores/version'
+import type { VersionSchema } from './schemas/Version.Schema'
+import { AppLauncher } from '@capacitor/app-launcher'
 
 //
 
@@ -92,6 +106,22 @@ const onReceivedPushNotification = (notification: PushNotificationSchema) => {
 	toastCmp.info(notification.title)
 }
 
+// --- Version
+const versionStore = useVersionStore()
+const { version, mismatch } = storeToRefs(versionStore)
+const versionDialog = ref(mismatch.value)
+
+const onVersionCancel = async () => {
+	versionDialog.value = false
+}
+
+const onUpdateClicked = async (v: VersionSchema) => {
+	const native = Capacitor.isNativePlatform()
+	if (!native) return window.open(version.value.url, "_blank", "noopener,noreferrer")
+	const result = await AppLauncher.openUrl({ url: version.value.url })
+	if (!result.completed) toastCmp.error("Unable to open update's URL.")
+}
+
 //
 
 const onMountedCb = async () => {
@@ -111,6 +141,9 @@ const onMountedCb = async () => {
 
 	// --- Server
 	await serverStore.connect(import.meta.env.VITE_API_URL)
+
+	// --- Version
+	await versionStore.get()
 
 	// --- Route Loader
 	routerCmp.beforeEach(() => isRouting.value = true)
