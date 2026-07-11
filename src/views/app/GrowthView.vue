@@ -236,8 +236,8 @@ const onRenderDetectionFrame = async (canvas: HTMLCanvasElement) => {
 }
 
 const onMountedCldScanDetection = async () => {
-    const { VITE_AI_CLD_FOLDER, VITE_AI_CLD_CLASSES } = import.meta.env
-    const [folder, classes] = [VITE_AI_CLD_FOLDER, VITE_AI_CLD_CLASSES?.split(", ")]
+    const { VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES } = import.meta.env
+    const [folder, classes] = [VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES?.split(", ")]
 
     cldDetectionLoading.value = true
     await cldDetectionCmp
@@ -286,8 +286,8 @@ const onDrawImageUpload = async (canvas: HTMLCanvasElement) => {
 }
 
 const onMountedCldUploadDetection = async () => {
-    const { VITE_AI_CLD_FOLDER, VITE_AI_CLD_CLASSES } = import.meta.env
-    const [folder, classes] = [VITE_AI_CLD_FOLDER, VITE_AI_CLD_CLASSES?.split(", ")]
+    const { VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES } = import.meta.env
+    const [folder, classes] = [VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES?.split(", ")]
 
     cldUploadDetectionLoading.value = true
     await cldUploadDetectionCmp
