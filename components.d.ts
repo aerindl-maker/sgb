@@ -25,6 +25,7 @@ declare module 'vue' {
     ThresholdUpdateForm: typeof import('./src/components/admin/thresholds/ThresholdUpdateForm.vue')['default']
     ToastQueue: typeof import('./src/components/ToastQueue.vue')['default']
     UpdateDialog: typeof import('./src/components/UpdateDialog.vue')['default']
+    UpdateLoaderDialog: typeof import('./src/components/UpdateLoaderDialog.vue')['default']
     UserCreateForm: typeof import('./src/components/admin/accounts/UserCreateForm.vue')['default']
     UserDeleteForm: typeof import('./src/components/admin/accounts/UserDeleteForm.vue')['default']
     UserUpdateForm: typeof import('./src/components/admin/accounts/UserUpdateForm.vue')['default']

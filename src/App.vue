@@ -26,7 +26,7 @@
 			v-model="messages"
 		></ToastQueue>
 		<UpdateDialog
-			v-if="Capacitor.isNativePlatform()"
+			v-if="Capacitor.isNativePlatform() && !busy && !versionChecking"
 			:version
 			:mismatch
 			:persistent="version.required"
@@ -35,6 +35,7 @@
 			@cancel="onVersionCancel"
 			@update="onUpdateClicked"
 		></UpdateDialog>
+		<UpdateLoaderDialog :model-value="!busy && versionChecking"></UpdateLoaderDialog>
 	</v-app>
 </template>
 
@@ -44,6 +45,7 @@ import AuthLayout from './layouts/AuthLayout.vue'
 import HomeLayout from './layouts/HomeLayout.vue'
 import ToastQueue from '@/components/ToastQueue.vue'
 import UpdateDialog from './components/UpdateDialog.vue'
+import UpdateLoaderDialog from './components/UpdateLoaderDialog.vue'
 import useToast from '@/composables/use-toast'
 import { useTheme } from 'vuetify'
 import { Capacitor } from '@capacitor/core'
@@ -110,6 +112,7 @@ const onReceivedPushNotification = (notification: PushNotificationSchema) => {
 const versionStore = useVersionStore()
 const { version, mismatch } = storeToRefs(versionStore)
 const versionDialog = ref(mismatch.value)
+const versionChecking = ref(true)
 
 const onVersionCancel = async () => {
 	versionDialog.value = false
@@ -141,9 +144,12 @@ const onMountedCb = async () => {
 
 	// --- Server
 	await serverStore.connect(import.meta.env.VITE_API_URL)
-
+	await new Promise(res => setTimeout(res, 1000))
+	
 	// --- Version
 	await versionStore.get()
+	await new Promise(res => setTimeout(res, 1000))
+	versionChecking.value = false
 
 	// --- Route Loader
 	routerCmp.beforeEach(() => isRouting.value = true)
