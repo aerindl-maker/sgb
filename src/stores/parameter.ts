@@ -7,8 +7,8 @@ export const useParameterStore = defineStore("parameter", () => {
 
     //
 
-    const minIoU = ref(0.9)
-    const minScore = ref(0.25)
+    const minIoU = ref(0.5)
+    const minScore = ref(0.50)
     const maxBoxCount = ref(100)
 
     //
