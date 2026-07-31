@@ -44,6 +44,18 @@
             </v-col>
             <v-col cols="6" sm="6" lg="4">
                 <ReadingCard
+                    status="Good"
+                    icon:color="orange"
+                    status:color="accent"
+                    :icon="lightIntensity.icon"
+                    :unit="lightIntensity.unit"
+                    :date="lightIntensity.createdAt"
+                    :title="lightIntensity.name"
+                    :value="lightIntensity.value"
+                ></ReadingCard>
+            </v-col>
+            <v-col cols="6" sm="6" lg="4">
+                <ReadingCard
                     icon="mdi-information-outline"
                     unit="%"
                     title="Alerts"
@@ -60,6 +72,7 @@
 
 <script setup lang="ts">
 import ReadingCard from '@/components/app/home/ReadingCard.vue';
+import useLightIntensity from '@/composables/use-light-intensity';
 import { useReadingStore } from '@/stores/reading';
 import { storeToRefs } from 'pinia';
 import { computed, onMounted } from 'vue';
@@ -73,6 +86,7 @@ const { temperatures, humidities, soilMoistures } = storeToRefs(readingStore)
 const temperature = computed(() => temperatures.value[temperatures.value.length - 1])
 const humidity = computed(() => humidities.value[humidities.value.length - 1])
 const soilMoisture = computed(() => soilMoistures.value[soilMoistures.value.length - 1])
+const { lightIntensity } = useLightIntensity()
 
 //
 
