@@ -148,7 +148,7 @@ const onMountedCb = async () => {
 	
 	// --- Version
 	await versionStore.get()
-	await new Promise(res => setTimeout(res, 1000))
+	versionDialog.value = mismatch.value
 	versionChecking.value = false
 
 	// --- Route Loader
