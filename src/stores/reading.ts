@@ -13,6 +13,7 @@ export const useReadingStore = defineStore("reading", () => {
     const humidities = computed(() => readings.filter((r) => r.name.toLowerCase().startsWith("humidity")))
     const temperatures = computed(() => readings.filter((r) => r.name.toLowerCase().startsWith("temperature")))
     const soilMoistures = computed(() => readings.filter((r) => r.name.toLowerCase().startsWith("soil")))
+    const lights = computed(() => readings.filter((r) => r.name.toLowerCase().startsWith("light")))
 
     //
 
@@ -30,6 +31,7 @@ export const useReadingStore = defineStore("reading", () => {
         humidities,
         temperatures,
         soilMoistures,
+        lights,
         getReadings,
     }
 })

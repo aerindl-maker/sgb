@@ -82,6 +82,25 @@
                     </template>
                 </v-card>
             </v-col>
+            <v-col cols="12" lg="6">
+                <v-card class="pt-4" elevation="1">
+                    <template #prepend>
+                        <v-icon color="orange">mdi-white-balance-sunny</v-icon>
+                    </template>
+                    <template #title>
+                        <span>Light</span>
+                    </template>
+                    <template #subtitle>
+                        <span>24-hour monitoring</span>
+                    </template>
+                    <template #text>
+                        <ReadingChart
+                            :color="themeCmp.current.value.colors.accent"
+                            :readings="lights"
+                        ></ReadingChart>
+                    </template>
+                </v-card>
+            </v-col>
         </v-row>
     </v-container>
 </template>
@@ -105,7 +124,7 @@ const themeCmp = useTheme()
 
 // --- Reading
 const readingStore = useReadingStore()
-const { readings, humidities, temperatures, soilMoistures } = storeToRefs(readingStore)
+const { readings, humidities, temperatures, soilMoistures, lights } = storeToRefs(readingStore)
 const readingSorted = computed(() => [...readings.value].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()))
 
 // --- PDF Exporting
