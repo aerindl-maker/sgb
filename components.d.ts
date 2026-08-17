@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ControlSwitchCard: typeof import('./src/components/admin/controls/ControlSwitchCard.vue')['default']
     ImageBoundingBoxRenderer: typeof import('./src/components/app/growth/ImageBoundingBoxRenderer.vue')['default']
     ImageUploadCard: typeof import('./src/components/app/growth/ImageUploadCard.vue')['default']
     ParticleDot: typeof import('./src/components/ParticleDot.vue')['default']

@@ -25,6 +25,10 @@
                 <v-icon>mdi-tune-vertical</v-icon>
                 <span>Threholds</span>
             </v-btn>
+            <v-btn to="/admin/controls" value="controls">
+                <v-icon>mdi-toggle-switch-outline</v-icon>
+                <span>Controls</span>
+            </v-btn>
             <v-btn to="/admin/detection" value="detection">
                 <v-icon>mdi-scan-helper</v-icon>
                 <span>Detection</span>

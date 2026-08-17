@@ -13,6 +13,7 @@ const WelcomeView = () => import("@/views/WelcomeView.vue")
 const GuideView = () => import("@/views/GuideView.vue")
 const AdminAccountsView = () => import("@/views/admin/AdminAccountsView.vue")
 const AdminThresholdsView = () => import("@/views/admin/AdminThresholdsView.vue")
+const AdminControlsView = () => import("@/views/admin/AdminControlsView.vue")
 const AdminDetectionView = () => import("@/views/admin/AdminDetectionView.vue")
 const AdminSettingsView = () => import("@/views/admin/AdminSettingsView.vue")
 
@@ -50,6 +51,13 @@ const routes: RouteRecordRaw[] = [
 		name: "admin thresholds",
 		meta: { layout: "admin" },
 		component: AdminThresholdsView,
+		beforeEnter: [refreshAuth, requireAuth],
+	},
+	{
+		path: "/admin/controls",
+		name: "admin controls",
+		meta: { layout: "admin" },
+		component: AdminControlsView,
 		beforeEnter: [refreshAuth, requireAuth],
 	},
 	{
