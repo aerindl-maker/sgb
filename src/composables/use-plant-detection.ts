@@ -23,7 +23,8 @@ export default () => {
 	//
 
 	const path = ref("")
-	const size = ref(256)
+	// CHANGED: hint only. The LiteRT pipeline reads the real input size from the model.
+	const size = ref(320)
 	const label = ref("plant")
 	const loaded = ref(false)
 
@@ -43,7 +44,7 @@ export default () => {
 		}
 	}
 
-	const load = async (url: string, imageSize = 256, classLabel = "plant") => {
+	const load = async (url: string, imageSize = 320, classLabel = "plant") => {
 		await dispose()
 
 		path.value = url

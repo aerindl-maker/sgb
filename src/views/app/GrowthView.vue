@@ -282,16 +282,17 @@ const onPlantPreviewError = (error: unknown) => {
 }
 
 const onMountedPlantDetection = async () => {
-	const folder = (
-		import.meta.env.VITE_AI_PLANT_URL || "https://sgb-worker.iansandoval264.workers.dev/models/plant"
-	).replace(/\/+$/, "")
-	const modelUrl = folder.endsWith(".json") ? folder : `${folder}/nano/model.json`
+	// CHANGED: LiteRT loads a single .tflite file instead of a tfjs model.json plus shards,
+	// and defaults to the locally bundled yolo26l export in public/model/plant/.
+	const source = (import.meta.env.VITE_AI_PLANT_URL || "/model/plant/large.tflite").replace(/\/+$/, "")
+	const modelUrl = source.endsWith(".tflite") ? source : `${source}/large.tflite`
 
 	plantDetectionLoading.value = true
 	plantDetectionError.value = ""
 
 	try {
-		await plantDetectionCmp.load(modelUrl, 256, "plant")
+		// The pipeline reads the real input size off the model, so 320 is only a hint.
+		await plantDetectionCmp.load(modelUrl, 320, "plant")
 		await plantDetectionCmp.warmup()
 		plantDetectionReady.value = true
 	} catch (error) {
