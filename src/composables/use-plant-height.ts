@@ -1,6 +1,11 @@
 import { api } from "@/plugins/api"
-import { PlantCaptureResponseSchema, PlantDetectionSchema, PlantHeightSchema } from "@/schemas/PlantHeightSchema"
-import { ref } from "vue"
+import {
+	PixelToCmRatioSchema,
+	PlantCaptureResponseSchema,
+	PlantDetectionSchema,
+	PlantHeightSchema,
+} from "@/schemas/PlantHeightSchema"
+import { computed, ref } from "vue"
 import type { z } from "zod"
 
 //
@@ -18,8 +23,12 @@ export default () => {
 	//
 
 	const heights = ref<PlantHeightSchema[]>([])
+	const ratios = ref<PixelToCmRatioSchema[]>([])
 	const loading = ref(false)
 	const saving = ref(false)
+
+	/** The most recent calibration wins, so a re-measure takes effect right away. */
+	const centimetersPerPixel = computed(() => ratios.value[0]?.centimetersPerPixel)
 
 	//
 
@@ -34,6 +43,13 @@ export default () => {
 		} finally {
 			loading.value = false
 		}
+	}
+
+	const listRatios = async () => {
+		const response = await api.get("/api/plant/pixel-to-cm-ratios")
+		const data = PixelToCmRatioSchema.array().parse(response.data)
+		ratios.value = [...data].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+		return data
 	}
 
 	const capture = async (input: PlantCaptureInput) => {
@@ -60,5 +76,5 @@ export default () => {
 
 	//
 
-	return { heights, loading, saving, capture, list }
+	return { centimetersPerPixel, heights, loading, ratios, saving, capture, list, listRatios }
 }

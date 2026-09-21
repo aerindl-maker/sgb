@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import type { DetectionRawSchema } from "@/schemas/DetectionSchema"
+import { boxToCentimeters, formatCentimeters } from "@/utils/plant-height"
 import { onMounted, onUnmounted, ref, watch } from "vue"
 
 //
@@ -21,12 +22,14 @@ const props = withDefaults(
 		detections: DetectionRawSchema[]
 		size?: number
 		boxColor?: string
+		centimetersPerPixel?: number
 		onFrame?: (canvas: HTMLCanvasElement) => Promise<void> | void
 		onError?: (error: unknown) => void
 	}>(),
 	{
 		size: 640,
 		boxColor: "#4a8c6f",
+		centimetersPerPixel: undefined,
 		onFrame: undefined,
 		onError: undefined,
 	}
@@ -72,7 +75,9 @@ const drawDetections = () => {
 		const y = detection.box.y * canvas.height
 		const width = detection.box.w * canvas.width
 		const height = detection.box.h * canvas.height
-		const label = `${(detection.box.h * 100).toFixed(1)}% of frame`
+		// The canvas is what gets captured, so its height is the pixel basis the
+		// saved measurement is scaled against too.
+		const label = formatCentimeters(boxToCentimeters(detection.box.h, canvas.height, props.centimetersPerPixel))
 		const padding = Math.max(4, canvas.width / 160)
 		const labelHeight = Math.max(20, canvas.width / 24)
 		const labelWidth = context.measureText(label).width + padding * 2

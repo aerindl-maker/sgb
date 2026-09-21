@@ -26,6 +26,7 @@
 							ref="plantCameraPreview"
 							:src="plantStream"
 							:detections="plantDetections"
+							:centimeters-per-pixel="plantCentimetersPerPixel"
 							:on-frame="onPlantCameraFrame"
 							:on-error="onPlantPreviewError"
 						></PlantCameraPreview>
@@ -270,6 +271,7 @@ const onMountedPlantDetection = async () => {
 
 // --- Plant Height History
 const plantHeightCmp = usePlantHeight()
+const { centimetersPerPixel: plantCentimetersPerPixel } = plantHeightCmp
 const plantCapturePreparing = ref(false)
 const plantCaptureBusy = computed(() => plantCapturePreparing.value || plantHeightCmp.saving.value)
 
@@ -461,7 +463,12 @@ const onMountedCldUploadDetection = async () => {
 //
 
 const onMountedCb = async () => {
-	await Promise.all([onMountedCamera(), onMountedPlantDetection()])
+	await Promise.all([
+		onMountedCamera(),
+		onMountedPlantDetection(),
+		// A missing calibration only falls the estimate back to the frame scale.
+		plantHeightCmp.listRatios().catch(() => undefined),
+	])
 }
 
 const onUnmountedCb = async () => {

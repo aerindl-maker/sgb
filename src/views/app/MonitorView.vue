@@ -110,7 +110,7 @@
                         <span>Height History</span>
                     </template>
                     <template #subtitle>
-                        <span>Normalized plant height</span>
+                        <span>Estimated plant height</span>
                     </template>
                     <template #text>
                         <v-skeleton-loader v-if="plantHeightCmp.loading.value" type="image"></v-skeleton-loader>
@@ -124,6 +124,7 @@
                             v-else
                             :color="themeCmp.current.value.colors.accent"
                             :heights="plantHeights"
+                            :centimeters-per-pixel="plantCentimetersPerPixel"
                         ></PlantHeightChart>
                     </template>
                 </v-card>
@@ -158,7 +159,7 @@ const readingSorted = computed(() => [...readings.value].sort((a, b) => a.create
 
 // --- Plant Height
 const plantHeightCmp = usePlantHeight()
-const { heights: plantHeights } = plantHeightCmp
+const { heights: plantHeights, centimetersPerPixel: plantCentimetersPerPixel } = plantHeightCmp
 
 // --- PDF Exporting
 const reportCmp = useReport()
@@ -185,6 +186,8 @@ const onMountedCb = async () => {
     await Promise.all([
         readingStore.getReadings().catch(() => toastCmp.error("Something went wrong.")),
         plantHeightCmp.list().catch(() => toastCmp.error("Something went wrong.")),
+        // A missing calibration only falls the estimate back to the frame scale.
+        plantHeightCmp.listRatios().catch(() => undefined),
     ])
 }
 

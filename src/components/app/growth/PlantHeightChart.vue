@@ -6,15 +6,17 @@
 
 <script setup lang="ts">
 import type { PlantHeightSchema } from "@/schemas/PlantHeightSchema"
+import { formatCentimeters, toCentimeters } from "@/utils/plant-height"
 import type { ChartData, ChartOptions } from "chart.js"
 import { computed } from "vue"
 import { Line } from "vue-chartjs"
 
 //
 
-const props = withDefaults(defineProps<{ heights: PlantHeightSchema[]; color?: string }>(), {
-	color: "#4a8c6f",
-})
+const props = withDefaults(
+	defineProps<{ heights: PlantHeightSchema[]; color?: string; centimetersPerPixel?: number }>(),
+	{ color: "#4a8c6f", centimetersPerPixel: undefined }
+)
 
 //
 
@@ -29,7 +31,9 @@ const data = computed<ChartData<"line">>(() => ({
 	),
 	datasets: [
 		{
-			data: props.heights.map(height => height.heightPercent),
+			data: props.heights.map(height =>
+				toCentimeters(height.pixelHeight, height.frameHeight, props.centimetersPerPixel)
+			),
 			borderColor: props.color,
 			backgroundColor: `${props.color}22`,
 			fill: true,
@@ -41,7 +45,7 @@ const data = computed<ChartData<"line">>(() => ({
 	],
 }))
 
-const options: ChartOptions<"line"> = {
+const options = computed<ChartOptions<"line">>(() => ({
 	responsive: true,
 	maintainAspectRatio: false,
 	interaction: { intersect: false, mode: "index" },
@@ -49,7 +53,7 @@ const options: ChartOptions<"line"> = {
 		legend: { display: false },
 		tooltip: {
 			callbacks: {
-				label: context => `Height: ${Number(context.parsed.y).toFixed(1)}% of frame`,
+				label: context => `Height: ${formatCentimeters(Number(context.parsed.y))}`,
 			},
 		},
 	},
@@ -61,16 +65,15 @@ const options: ChartOptions<"line"> = {
 		},
 		y: {
 			beginAtZero: true,
-			max: 100,
 			grid: { color: "rgba(128, 128, 128, 0.15)" },
 			border: { display: false },
 			ticks: {
 				color: "#888",
-				callback: value => `${value}%`,
+				callback: value => `${value} cm`,
 			},
 		},
 	},
-}
+}))
 
 //
 </script>
