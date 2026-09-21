@@ -1,18 +1,12 @@
 <template>
-	<v-sheet color="grey-darken-4" class="rounded-lg overflow-hidden">
-		<v-responsive :aspect-ratio="1">
-			<v-sheet
-				v-if="!src"
-				color="grey-darken-4"
-				class="w-100 h-100 d-flex flex-column align-center justify-center text-grey-lighten-1"
-			>
-				<v-icon icon="mdi-camera-outline" size="48"></v-icon>
-				<span class="mt-2 text-body-2">Select a camera and start the feed</span>
-			</v-sheet>
-			<video ref="videoElement" autoplay muted playsinline class="d-none"></video>
-			<canvas v-show="src" ref="canvasElement" class="w-100 h-100 d-block" :width="size" :height="size"></canvas>
-		</v-responsive>
-	</v-sheet>
+	<div class="w-100 h-100 d-flex align-center justify-center">
+		<div v-if="!src" class="d-flex flex-column align-center justify-center text-grey">
+			<v-icon icon="mdi-camera-outline" size="48"></v-icon>
+			<span class="mt-2 text-body-2">Select a camera and start the feed</span>
+		</div>
+		<video ref="videoElement" autoplay muted playsinline class="d-none"></video>
+		<canvas v-show="src" ref="canvasElement" class="w-100 d-block" :width="size" :height="size"></canvas>
+	</div>
 </template>
 
 <script setup lang="ts">

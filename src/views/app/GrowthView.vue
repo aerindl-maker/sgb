@@ -9,19 +9,17 @@
 			<v-col cols="12" md="8" lg="7">
 				<PlantHeightCameraCard
 					:cameras="plantCameraOptions"
-					:selected-camera-id="selectedPlantCameraId"
 					:camera-loading="cameraLoading"
 					:stream-active="plantCameraActive"
 					:model-loading="plantDetectionLoading"
 					:model-ready="plantDetectionReady"
 					:saving="plantCaptureBusy"
 					:detection-count="plantDetections.length"
-					:height-percent="currentPlantHeightPercent"
 					:error-message="plantDetectionError"
-					:on-select-camera="onSelectPlantCamera"
 					:on-start="onStartPlantCamera"
 					:on-stop="onStopPlantCamera"
 					:on-capture="onCapturePlantHeight"
+					:on-switch-camera="onSwitchPlantCamera"
 				>
 					<template #preview>
 						<PlantCameraPreview
@@ -200,8 +198,12 @@ const plantCameraOptions = computed(() =>
 )
 const plantCameraActive = computed(() => !!plantStream.value)
 
-const onSelectPlantCamera = (cameraId?: string) => {
-	selectedPlantCameraId.value = cameraId
+const onSwitchPlantCamera = async () => {
+	if (cameras.value.length === 0) return
+
+	const index = cameras.value.findIndex(camera => camera.deviceId === selectedPlantCameraId.value)
+	selectedPlantCameraId.value = cameras.value[(index + 1) % cameras.value.length]?.deviceId
+	if (plantCameraActive.value) await onStartPlantCamera()
 }
 
 const onStartPlantCamera = async () => {
@@ -227,10 +229,6 @@ const plantDetections = ref<DetectionRawSchema[]>([])
 const plantDetectionLoading = ref(false)
 const plantDetectionReady = ref(false)
 const plantDetectionError = ref("")
-const currentPlantHeightPercent = computed(() => {
-	if (plantDetections.value.length === 0) return undefined
-	return Math.max(...plantDetections.value.map(detection => detection.box.h * 100))
-})
 
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : "Something went wrong.")
 
