@@ -1,8 +1,8 @@
 <template>
 	<div class="w-100 h-100 d-flex align-center justify-center">
 		<div v-if="!src" class="d-flex flex-column align-center justify-center text-grey">
-			<v-icon icon="mdi-camera-outline" size="48"></v-icon>
-			<span class="mt-2 text-body-2">Select a camera and start the feed</span>
+			<v-icon icon="mdi-camera-outline" size="32"></v-icon>
+			<span class="mt-1 text-caption">No camera feed</span>
 		</div>
 		<video ref="videoElement" autoplay muted playsinline class="d-none"></video>
 		<canvas v-show="src" ref="canvasElement" class="w-100 d-block" :width="size" :height="size"></canvas>

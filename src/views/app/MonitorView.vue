@@ -116,9 +116,9 @@
                         <v-skeleton-loader v-if="plantHeightCmp.loading.value" type="image"></v-skeleton-loader>
                         <v-empty-state
                             v-else-if="plantHeights.length === 0"
+                            size="48"
                             icon="mdi-chart-line"
                             title="No height history yet"
-                            text="Capture a plant on the growth page to add the first measurement."
                         ></v-empty-state>
                         <PlantHeightChart
                             v-else
