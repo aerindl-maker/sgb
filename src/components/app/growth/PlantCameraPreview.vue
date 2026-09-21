@@ -5,7 +5,7 @@
 			<span class="mt-1 text-caption">No camera feed</span>
 		</div>
 		<video ref="videoElement" autoplay muted playsinline class="d-none"></video>
-		<canvas v-show="src" ref="canvasElement" class="w-100 d-block" :width="size" :height="size"></canvas>
+		<canvas v-show="src" ref="canvasElement" class="w-100" :width="size" :height="size"></canvas>
 	</div>
 </template>
 
@@ -177,3 +177,10 @@ defineExpose({ capture, resume })
 
 //
 </script>
+
+<style scoped>
+/* Plain display, not d-block: the helper is !important and would beat the inline display of v-show. */
+canvas {
+	display: block;
+}
+</style>
