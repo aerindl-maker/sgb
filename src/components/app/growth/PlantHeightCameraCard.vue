@@ -26,7 +26,11 @@
                     </template>
                 </v-menu>
             </div>
-            <v-responsive class="w-100 mt-1 border rounded overflow-hidden" :aspect-ratio="1">
+            <v-responsive
+                class="w-100 mt-1 border rounded overflow-hidden"
+                content-class="d-flex align-center justify-center"
+                :aspect-ratio="1"
+            >
                 <slot name="preview">
                     <!-- PlantCameraPreview -->
                 </slot>

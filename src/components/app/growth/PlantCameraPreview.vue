@@ -1,5 +1,5 @@
 <template>
-	<div class="w-100 h-100 d-flex align-center justify-center">
+	<div class="w-100 d-flex align-center justify-center">
 		<div v-if="!src" class="d-flex flex-column align-center justify-center text-grey">
 			<v-icon icon="mdi-camera-outline" size="32"></v-icon>
 			<span class="mt-1 text-caption">No camera feed</span>
