@@ -1,14 +1,12 @@
 <template>
 	<v-container class="pb-16">
+		<v-row dense>
+			<v-col cols="12">
+				<h4 class="text-grey-darken-1">GROWTH</h4>
+			</v-col>
+		</v-row>
 		<v-row dense justify="center">
 			<v-col cols="12" md="8" lg="7">
-				<div class="mb-3">
-					<h3 class="font-weight-bold">Plant growth</h3>
-					<p class="text-body-2 text-medium-emphasis">
-						Capture the plant against the same camera position to build a comparable height history.
-					</p>
-				</div>
-
 				<PlantHeightCameraCard
 					:cameras="plantCameraOptions"
 					:selected-camera-id="selectedPlantCameraId"
