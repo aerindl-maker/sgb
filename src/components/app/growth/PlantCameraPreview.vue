@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import type { DetectionRawSchema } from "@/schemas/DetectionSchema"
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { onMounted, onUnmounted, ref, watch } from "vue"
 
 //
 
@@ -78,7 +78,7 @@ const drawDetections = () => {
 		const y = detection.box.y * canvas.height
 		const width = detection.box.w * canvas.width
 		const height = detection.box.h * canvas.height
-		const label = `${detection.class} ${(detection.confidence * 100).toFixed(0)}%`
+		const label = `${(detection.box.h * 100).toFixed(1)}% of frame`
 		const padding = Math.max(4, canvas.width / 160)
 		const labelHeight = Math.max(20, canvas.width / 24)
 		const labelWidth = context.measureText(label).width + padding * 2
@@ -94,9 +94,12 @@ const drawDetections = () => {
 
 const renderFrame = async () => {
 	if (!drawVideoFrame() || !canvasElement.value) return
-	await props.onFrame?.(canvasElement.value)
-	await nextTick()
+
+	// The boxes belong to the previous inference, but drawing them onto the fresh
+	// frame keeps them visible for its whole lifetime. Drawing them after the
+	// inference instead would leave them on screen for a single frame only.
 	drawDetections()
+	await props.onFrame?.(canvasElement.value)
 }
 
 const queueFrame = () => {

@@ -23,6 +23,7 @@
 		"@capacitor/status-bar": "^8.0.1",
 		"@fontsource/dm-sans": "^5.2.8",
 		"@fontsource/roboto": "5.2.7",
+		"@litertjs/core": "^2.5.3",
 		"@mdi/font": "7.4.47",
 		"@tensorflow/tfjs": "^4.22.0",
 		"@tensorflow/tfjs-backend-wasm": "^4.22.0",

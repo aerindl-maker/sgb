@@ -1,12 +1,18 @@
 import type { DetectionRawSchema } from "@/schemas/DetectionSchema"
 import PlantDetectionWorker from "@/tasks/plant.detection.task.ts?worker"
+import type { Accelerator } from "@litertjs/core"
 import * as Comlink from "comlink"
 import { ref, toRaw } from "vue"
 
 //
 
 type PlantDetectionWorkerExpose = {
-	load: (url: string, imageSize: number, label: string) => Promise<void>
+	load: (
+		url: string,
+		wasmUrl: string,
+		label: string,
+		accelerator?: Accelerator
+	) => Promise<{ accelerator: Accelerator; imageSize: number }>
 	warmup: () => Promise<void>
 	dispose: () => Promise<void>
 	predict: (
@@ -23,9 +29,11 @@ export default () => {
 	//
 
 	const path = ref("")
-	const size = ref(256)
+	const wasm = ref("/litert/")
+	const size = ref(0)
 	const label = ref("plant")
 	const loaded = ref(false)
+	const accelerator = ref<Accelerator>()
 
 	let model: Comlink.Remote<PlantDetectionWorkerExpose> | undefined
 	let worker: InstanceType<typeof PlantDetectionWorker> | undefined
@@ -40,20 +48,25 @@ export default () => {
 			model = undefined
 			worker = undefined
 			loaded.value = false
+			accelerator.value = undefined
+			size.value = 0
 		}
 	}
 
-	const load = async (url: string, imageSize = 256, classLabel = "plant") => {
+	const load = async (url: string, classLabel = "plant", wasmUrl = "/litert/") => {
 		await dispose()
 
 		path.value = url
-		size.value = imageSize
+		wasm.value = wasmUrl
 		label.value = classLabel
 		worker = new PlantDetectionWorker()
 		model = Comlink.wrap<PlantDetectionWorkerExpose>(worker)
 
 		try {
-			await model.load(url, toRaw(size.value), toRaw(label.value))
+			// The frame size comes from the model itself, so exports can change freely.
+			const details = await model.load(url, toRaw(wasm.value), toRaw(label.value))
+			accelerator.value = details.accelerator
+			size.value = details.imageSize
 			loaded.value = true
 		} catch (error) {
 			worker.terminate()
@@ -76,10 +89,12 @@ export default () => {
 	//
 
 	return {
+		accelerator,
 		label,
 		loaded,
 		path,
 		size,
+		wasm,
 		dispose,
 		load,
 		predict,

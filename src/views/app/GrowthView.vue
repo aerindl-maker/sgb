@@ -282,16 +282,14 @@ const onPlantPreviewError = (error: unknown) => {
 }
 
 const onMountedPlantDetection = async () => {
-	const folder = (
-		import.meta.env.VITE_AI_PLANT_URL || "https://sgb-worker.iansandoval264.workers.dev/models/plant"
-	).replace(/\/+$/, "")
-	const modelUrl = folder.endsWith(".json") ? folder : `${folder}/nano/model.json`
+	const folder = import.meta.env.VITE_AI_PLANT_URL.replace(/\/+$/, "")
+	const modelUrl = folder.endsWith(".tflite") ? folder : `${folder}/nano.tflite`
 
 	plantDetectionLoading.value = true
 	plantDetectionError.value = ""
 
 	try {
-		await plantDetectionCmp.load(modelUrl, 256, "plant")
+		await plantDetectionCmp.load(modelUrl, "plant")
 		await plantDetectionCmp.warmup()
 		plantDetectionReady.value = true
 	} catch (error) {
