@@ -35,33 +35,6 @@
 						></PlantCameraPreview>
 					</template>
 				</PlantHeightCameraCard>
-
-				<v-card rounded="xl" elevation="1" class="mt-3">
-					<v-card-item>
-						<template #prepend>
-							<v-avatar color="secondary" class="text-accent">
-								<v-icon icon="mdi-chart-timeline-variant-shimmer"></v-icon>
-							</v-avatar>
-						</template>
-						<template #title>Height history</template>
-						<template #subtitle>Normalized plant height as a percentage of the frame</template>
-						<template v-if="latestPlantHeight" #append>
-							<v-chip color="accent" variant="tonal" size="small">
-								Latest {{ latestPlantHeight.heightPercent.toFixed(1) }}%
-							</v-chip>
-						</template>
-					</v-card-item>
-					<v-card-text>
-						<v-skeleton-loader v-if="plantHeightCmp.loading.value" type="image"></v-skeleton-loader>
-						<v-empty-state
-							v-else-if="plantHeights.length === 0"
-							icon="mdi-chart-line"
-							title="No height history yet"
-							text="Start the camera and save a detected plant to add the first measurement."
-						></v-empty-state>
-						<PlantHeightChart v-else :heights="plantHeights"></PlantHeightChart>
-					</v-card-text>
-				</v-card>
 			</v-col>
 		</v-row>
 		<v-dialog
@@ -147,7 +120,6 @@
 import ImageBoundingBoxRenderer from "@/components/app/growth/ImageBoundingBoxRenderer.vue"
 import PlantCameraPreview from "@/components/app/growth/PlantCameraPreview.vue"
 import PlantHeightCameraCard from "@/components/app/growth/PlantHeightCameraCard.vue"
-import PlantHeightChart from "@/components/app/growth/PlantHeightChart.vue"
 import VideoBoundingBoxRenderer from "@/components/app/growth/VideoBoundingBoxRenderer.vue"
 import VideoScanCard from "@/components/app/growth/VideoScanCard.vue"
 import useCamera from "@/composables/use-camera"
@@ -302,10 +274,8 @@ const onMountedPlantDetection = async () => {
 
 // --- Plant Height History
 const plantHeightCmp = usePlantHeight()
-const { heights: plantHeights } = plantHeightCmp
 const plantCapturePreparing = ref(false)
 const plantCaptureBusy = computed(() => plantCapturePreparing.value || plantHeightCmp.saving.value)
-const latestPlantHeight = computed(() => plantHeights.value.at(-1))
 
 const onCapturePlantHeight = async () => {
 	if (plantCaptureBusy.value || !plantCameraPreview.value || plantDetections.value.length === 0) return
@@ -327,10 +297,6 @@ const onCapturePlantHeight = async () => {
 		plantCapturePreparing.value = false
 		plantCameraPreview.value?.resume()
 	}
-}
-
-const onMountedPlantHeights = async () => {
-	await plantHeightCmp.list().catch(error => toastCmp.error(getErrorMessage(error)))
 }
 
 // --- Scan Dialog
@@ -499,7 +465,7 @@ const onMountedCldUploadDetection = async () => {
 //
 
 const onMountedCb = async () => {
-	await Promise.all([onMountedCamera(), onMountedPlantDetection(), onMountedPlantHeights()])
+	await Promise.all([onMountedCamera(), onMountedPlantDetection()])
 }
 
 const onUnmountedCb = async () => {

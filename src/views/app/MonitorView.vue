@@ -101,6 +101,33 @@
                     </template>
                 </v-card>
             </v-col>
+            <v-col cols="12" lg="6">
+                <v-card class="pt-4" elevation="1">
+                    <template #prepend>
+                        <v-icon color="green">mdi-sprout</v-icon>
+                    </template>
+                    <template #title>
+                        <span>Height History</span>
+                    </template>
+                    <template #subtitle>
+                        <span>Normalized plant height</span>
+                    </template>
+                    <template #text>
+                        <v-skeleton-loader v-if="plantHeightCmp.loading.value" type="image"></v-skeleton-loader>
+                        <v-empty-state
+                            v-else-if="plantHeights.length === 0"
+                            icon="mdi-chart-line"
+                            title="No height history yet"
+                            text="Capture a plant on the growth page to add the first measurement."
+                        ></v-empty-state>
+                        <PlantHeightChart
+                            v-else
+                            :color="themeCmp.current.value.colors.accent"
+                            :heights="plantHeights"
+                        ></PlantHeightChart>
+                    </template>
+                </v-card>
+            </v-col>
         </v-row>
     </v-container>
 </template>
@@ -108,7 +135,9 @@
 <script setup lang="ts">
 import useToast from '@/composables/use-toast';
 import useFileSave from '@/composables/use-file-save';
+import PlantHeightChart from '@/components/app/growth/PlantHeightChart.vue';
 import ReadingChart from '@/components/app/monitor/ReadingChart.vue';
+import usePlantHeight from '@/composables/use-plant-height';
 import { useDate, useTheme } from 'vuetify';
 import { useReadingStore } from '@/stores/reading';
 import { computed, nextTick, onMounted, ref } from 'vue';
@@ -126,6 +155,10 @@ const themeCmp = useTheme()
 const readingStore = useReadingStore()
 const { readings, humidities, temperatures, soilMoistures, lights } = storeToRefs(readingStore)
 const readingSorted = computed(() => [...readings.value].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()))
+
+// --- Plant Height
+const plantHeightCmp = usePlantHeight()
+const { heights: plantHeights } = plantHeightCmp
 
 // --- PDF Exporting
 const reportCmp = useReport()
@@ -149,9 +182,10 @@ const onClickExportPDF = async () => {
 //
 
 const onMountedCb = async () => {
-    await readingStore
-        .getReadings()
-        .catch(() => toastCmp.error("Something went wrong."))
+    await Promise.all([
+        readingStore.getReadings().catch(() => toastCmp.error("Something went wrong.")),
+        plantHeightCmp.list().catch(() => toastCmp.error("Something went wrong.")),
+    ])
 }
 
 onMounted(onMountedCb)
