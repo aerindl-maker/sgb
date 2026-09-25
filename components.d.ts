@@ -20,6 +20,8 @@ declare module 'vue' {
     PlantHeightChart: typeof import('./src/components/app/growth/PlantHeightChart.vue')['default']
     ReadingCard: typeof import('./src/components/app/home/ReadingCard.vue')['default']
     ReadingChart: typeof import('./src/components/app/monitor/ReadingChart.vue')['default']
+    ReportExportForm: typeof import('./src/components/app/monitor/ReportExportForm.vue')['default']
+    ReportExportMenu: typeof import('./src/components/app/monitor/ReportExportMenu.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SignInForm: typeof import('./src/components/auth/SignInForm.vue')['default']

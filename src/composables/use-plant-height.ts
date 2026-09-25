@@ -5,6 +5,7 @@ import {
 	PlantDetectionSchema,
 	PlantHeightSchema,
 } from "@/schemas/PlantHeightSchema"
+import type { ReportFilterSchema, ReportQuerySchema } from "@/schemas/ReportSchema"
 import { computed, ref } from "vue"
 import type { z } from "zod"
 
@@ -45,6 +46,18 @@ export default () => {
 		}
 	}
 
+	/** Fetches a page of heights without touching the charted list. */
+	const query = async (params: ReportQuerySchema) => {
+		const response = await api.get("/api/plant/heights", { params })
+		return PlantHeightSchema.array().parse(response.data)
+	}
+
+	const count = async (filter: ReportFilterSchema) => {
+		const params = { alpha: filter.alpha ?? undefined, omega: filter.omega ?? undefined }
+		const response = await api.get<{ count: number }>("/api/plant/heights/count", { params })
+		return Number(response.data.count)
+	}
+
 	const listRatios = async () => {
 		const response = await api.get("/api/plant/pixel-to-cm-ratios")
 		const data = PixelToCmRatioSchema.array().parse(response.data)
@@ -76,5 +89,5 @@ export default () => {
 
 	//
 
-	return { centimetersPerPixel, heights, loading, ratios, saving, capture, list, listRatios }
+	return { centimetersPerPixel, heights, loading, ratios, saving, capture, count, list, listRatios, query }
 }
