@@ -44,6 +44,13 @@
                                     :class="esp.enabled ? `text-red` : ``"
                                     @click="onClickToggle(esp)"
                                 ></v-list-item>
+                                <v-list-item
+                                    v-if="esp.id != DEFAULT_ESP_ID"
+                                    prepend-icon="mdi-delete-outline"
+                                    title="Delete"
+                                    class="text-red"
+                                    @click="onClickDelete(esp)"
+                                ></v-list-item>
                             </v-list>
                         </v-menu>
                     </template>
@@ -106,6 +113,15 @@
                 <v-card-title class="text-center font-weight-bold">{{ confirmation?.title }}</v-card-title>
                 <v-card-text>
                     <p class="text-center text-grey">{{ confirmation?.message }}</p>
+                    <v-text-field
+                        v-if="confirmation?.phrase"
+                        v-model="confirmInput"
+                        class="mt-4"
+                        color="red"
+                        hide-details
+                        :label="`Type ${confirmation.phrase} to confirm`"
+                        :disabled="isConfirming"
+                    ></v-text-field>
                     <div class="d-flex ga-2 mt-4">
                         <v-btn class="flex-grow-1" variant="tonal" text="Cancel" @click="showConfirmDialog = false"></v-btn>
                         <v-btn
@@ -113,7 +129,7 @@
                             color="red"
                             :text="confirmation?.action"
                             :loading="isConfirming"
-                            :disabled="isConfirming"
+                            :disabled="isConfirming || !isPhraseTyped"
                             @click="onConfirm"
                         ></v-btn>
                     </div>
@@ -222,19 +238,27 @@ const onClickCopyKey = async () => {
 }
 
 // --- Confirmations
-type Confirmation = { title: string, message: string, action: string, run: () => Promise<unknown> }
+// --- A phrase makes the user type it first, for actions that can't be undone
+type Confirmation = { title: string, message: string, action: string, phrase?: string, run: () => Promise<unknown> }
 const confirmation = ref<Confirmation>()
+const confirmInput = ref("")
 const isConfirming = ref(false)
 const showConfirmDialog = ref(false)
+const isPhraseTyped = computed(() => !confirmation.value?.phrase || confirmInput.value.trim() == confirmation.value.phrase)
+
+const confirm = (value: Confirmation) => {
+    confirmation.value = value
+    confirmInput.value = ""
+    showConfirmDialog.value = true
+}
 
 const onClickRegenerate = (esp: EspSchema) => {
-    confirmation.value = {
+    confirm({
         title: "New Key",
         action: "Generate",
         message: `${esp.name} will disconnect until it's re-flashed with the new key.`,
         run: () => espStore.regenerateKey(esp.id).then(showKey),
-    }
-    showConfirmDialog.value = true
+    })
 }
 
 const onClickToggle = (esp: EspSchema) => {
@@ -242,13 +266,22 @@ const onClickToggle = (esp: EspSchema) => {
         .then(() => toastCmp.success(`${esp.name} enabled.`))
         .catch((err) => toastCmp.error(toError(err)))
 
-    confirmation.value = {
+    confirm({
         title: "Disable ESP",
         action: "Disable",
         message: `${esp.name} will be disconnected and rejected. Its history is kept.`,
         run: () => espStore.patchEsp(esp.id, { enabled: false }).then(() => toastCmp.success(`${esp.name} disabled.`)),
-    }
-    showConfirmDialog.value = true
+    })
+}
+
+const onClickDelete = (esp: EspSchema) => {
+    confirm({
+        title: "Delete ESP",
+        action: "Delete",
+        phrase: esp.name,
+        message: `${esp.name} and all of its readings, thresholds, controls, errors, and growth captures will be permanently deleted. This can't be undone.`,
+        run: () => espStore.deleteEsp(esp.id).then(() => toastCmp.success(`${esp.name} deleted.`)),
+    })
 }
 
 const onConfirm = async () => {

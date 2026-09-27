@@ -60,6 +60,14 @@ export const useEspStore = defineStore("esp", () => {
         return upsert(EspSchema.parse(res.data))
     }
 
+    // --- Permanent, the server drops the esp with all of its history
+    const deleteEsp = async (id: number) => {
+        await api.delete(`/api/esp/${id}`)
+        const index = esps.findIndex((e) => e.id == id)
+        if (index != -1) esps.splice(index, 1)
+        if (selectedId.value == id) selectedId.value = undefined
+    }
+
     const regenerateKey = async (id: number) => {
         const res = await api.post<EspWithKeySchema>(`/api/esp/${id}/key`)
         const parsed = EspWithKeySchema.parse(res.data)
@@ -81,5 +89,6 @@ export const useEspStore = defineStore("esp", () => {
         postEsp,
         patchEsp,
         regenerateKey,
+        deleteEsp,
     }
 }, { persist: { pick: ["selectedId"] } })
