@@ -57,14 +57,15 @@
             </v-col>
             <v-col cols="6" sm="6" lg="4">
                 <ReadingCard
+                    to="/app/errors"
                     icon="mdi-information-outline"
-                    unit="%"
+                    unit=""
                     title="Alerts"
-                    status="Review"
                     icon:color="orange"
-                    status:color="orange"
-                    :date="new Date()"
-                    :value="2"
+                    :status="alertCount ? `Review` : `Clear`"
+                    :status:color="alertCount ? `orange` : `accent`"
+                    :date="latestAlertAt"
+                    :value="alertCount"
                 ></ReadingCard>
             </v-col>
         </v-row>
@@ -75,8 +76,12 @@
 import ReadingCard from '@/components/app/home/ReadingCard.vue';
 import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue';
 import { useReadingStore } from '@/stores/reading';
+import { useEspStore } from '@/stores/esp';
+import { api } from '@/plugins/api';
+import { FaultSchema } from '@/schemas/FaultSchema';
 import { storeToRefs } from 'pinia';
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import z from 'zod';
 
 //
 
@@ -89,10 +94,25 @@ const humidity = computed(() => humidities.value[humidities.value.length - 1])
 const soilMoisture = computed(() => soilMoistures.value[soilMoistures.value.length - 1])
 const light = computed(() => lights.value[lights.value.length - 1])
 
+// --- Alerts
+const espStore = useEspStore()
+const alertCount = ref(0)
+const latestAlertAt = ref<Date>(new Date())
+
+const getAlerts = async () => {
+    const alpha = new Date()
+    alpha.setHours(0, 0, 0, 0)
+    const params = { espId: espStore.selectedId, alpha: alpha.toISOString(), limit: 100 }
+    const res = await api.get<FaultSchema[]>("/api/fault", { params })
+    const faults = z.array(FaultSchema).parse(res.data)
+    alertCount.value = faults.length
+    if (faults[0]) latestAlertAt.value = faults[0].createdAt
+}
+
 //
 
 const onMountedCb = async () => {
-    await readingStore.getReadings()
+    await Promise.all([readingStore.getReadings(), getAlerts()])
 }
 
 onMounted(onMountedCb)

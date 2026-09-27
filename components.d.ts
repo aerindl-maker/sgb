@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     ControlSwitchCard: typeof import('./src/components/app/controls/ControlSwitchCard.vue')['default']
     EspBreadcrumbs: typeof import('./src/components/app/EspBreadcrumbs.vue')['default']
+    ForgotPasswordForm: typeof import('./src/components/auth/ForgotPasswordForm.vue')['default']
     ImageBoundingBoxRenderer: typeof import('./src/components/app/growth/ImageBoundingBoxRenderer.vue')['default']
     ImageUploadCard: typeof import('./src/components/app/growth/ImageUploadCard.vue')['default']
     ParticleDot: typeof import('./src/components/ParticleDot.vue')['default']
@@ -23,6 +24,7 @@ declare module 'vue' {
     ReadingChart: typeof import('./src/components/app/monitor/ReadingChart.vue')['default']
     ReportExportForm: typeof import('./src/components/app/monitor/ReportExportForm.vue')['default']
     ReportExportMenu: typeof import('./src/components/app/monitor/ReportExportMenu.vue')['default']
+    ResetPasswordForm: typeof import('./src/components/auth/ResetPasswordForm.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SignInForm: typeof import('./src/components/auth/SignInForm.vue')['default']
