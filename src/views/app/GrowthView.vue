@@ -2,6 +2,7 @@
 	<v-container class="pb-16">
 		<v-row dense>
 			<v-col cols="12">
+				<EspBreadcrumbs :items="[{ title: 'Growth' }]"></EspBreadcrumbs>
 				<h4 class="text-grey-darken-1">GROWTH</h4>
 			</v-col>
 		</v-row>
@@ -124,6 +125,7 @@ import useCldDetection from "@/composables/use-cld-detection"
 import useFileSave from "@/composables/use-file-save"
 import usePlantDetection from "@/composables/use-plant-detection"
 import usePlantHeight from "@/composables/use-plant-height"
+import EspBreadcrumbs from "@/components/app/EspBreadcrumbs.vue"
 import { useEspStore } from "@/stores/esp"
 import useToast from "@/composables/use-toast"
 import { api } from "@/plugins/api"

@@ -2,6 +2,7 @@
     <v-container class="">
         <v-row dense align="center">
             <v-col cols="12">
+                <EspBreadcrumbs :items="[{ title: 'Thresholds' }]"></EspBreadcrumbs>
                 <h4 class="text-grey-darken-1">THRESHOLDS</h4>
             </v-col>
         </v-row>
@@ -92,6 +93,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import type { SubmissionContext } from 'vee-validate';
 import useToast from '@/composables/use-toast';
 import ThresholdCard from '@/components/app/thresholds/ThresholdCard.vue';
+import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue';
 import ThresholdCreateForm from '@/components/app/thresholds/ThresholdCreateForm.vue';
 import ThresholdUpdateForm from '@/components/app/thresholds/ThresholdUpdateForm.vue';
 import ThresholdDeleteForm from '@/components/app/thresholds/ThresholdDeleteForm.vue';

@@ -10,8 +10,8 @@
             </v-col>
         </v-row>
         <v-row dense class="mt-2">
-            <v-col v-if="isFetchingEsps" v-for="n in [1, 2]" :key="n" cols="12" md="6">
-                <v-skeleton-loader type="list-item-avatar-two-line"></v-skeleton-loader>
+            <v-col v-if="isFetchingEsps" v-for="n in [1, 2]" :key="n" cols="6" sm="6" lg="4">
+                <v-skeleton-loader type="article"></v-skeleton-loader>
             </v-col>
             <v-col v-else-if="!esps.length" cols="12">
                 <v-card elevation="1" class="py-5">
@@ -21,22 +21,18 @@
                     </v-card-text>
                 </v-card>
             </v-col>
-            <v-col v-else v-for="esp in esps" :key="esp.id" cols="12" md="6">
-                <v-card elevation="1" :class="{ 'opacity-60': !esp.enabled }" @click="onClickOpen(esp)">
-                    <v-card-text class="d-flex align-center ga-3">
-                        <v-avatar :color="esp.online ? `accent` : `grey`" variant="tonal">
-                            <v-icon icon="mdi-chip"></v-icon>
-                        </v-avatar>
-                        <div class="flex-grow-1">
-                            <div class="font-weight-bold">{{ esp.name }}</div>
-                            <div style="font-size: x-small" class="text-grey">
-                                <span>{{ !esp.enabled ? "Disabled" : esp.online ? "Online" : "Offline" }}</span>
-                                <span v-if="esp.lastSeenAt"> · Last seen {{ dateCmp.format(esp.lastSeenAt, "keyboardDateTime12h") }}</span>
-                            </div>
-                        </div>
+            <v-col v-else v-for="esp in esps" :key="esp.id" cols="6" sm="6" lg="4">
+                <v-card class="pt-4" elevation="1" :class="{ 'opacity-60': !esp.enabled }" @click="onClickOpen(esp)">
+                    <template #subtitle>
+                        <span class="d-flex align-center ga-1">
+                            <v-icon icon="mdi-chip" :color="esp.online ? `accent` : `grey`" size="small"></v-icon>
+                            <span>ESP Device</span>
+                        </span>
+                    </template>
+                    <template #append>
                         <v-menu location="bottom end">
                             <template #activator="{ props }">
-                                <v-btn v-bind="props" size="small" icon="mdi-dots-vertical" variant="text" @click.stop></v-btn>
+                                <v-btn v-bind="props" size="x-small" icon="mdi-dots-vertical" variant="text" class="mt-n2 mr-n2" @click.stop></v-btn>
                             </template>
                             <v-list density="compact" rounded="lg">
                                 <v-list-item prepend-icon="mdi-pencil-outline" title="Rename" @click="onClickRename(esp)"></v-list-item>
@@ -50,7 +46,16 @@
                                 ></v-list-item>
                             </v-list>
                         </v-menu>
-                    </v-card-text>
+                    </template>
+                    <template #text>
+                        <div class="d-flex flex-column align-start ga-2">
+                            <h3 class="pl-2 w-100 text-truncate">{{ esp.name }}</h3>
+                            <div class="w-100 d-flex align-center justify-space-between ga-1">
+                                <v-chip size="x-small" :color="espStatus(esp).color">{{ espStatus(esp).text }}</v-chip>
+                                <span v-if="esp.lastSeenAt" class="text-caption text-grey">{{ dateCmp.format(esp.lastSeenAt, "fullTime12h") }}</span>
+                            </div>
+                        </div>
+                    </template>
                 </v-card>
             </v-col>
         </v-row>
@@ -147,6 +152,12 @@ const toError = (err: any) => err?.response?.data || err?.message || "Something 
 const espStore = useEspStore()
 const { esps } = storeToRefs(espStore)
 const isFetchingEsps = ref(false)
+
+// --- Status
+const espStatus = (esp: EspSchema) => {
+    if (!esp.enabled) return { text: "Disabled", color: "red" }
+    return esp.online ? { text: "Online", color: "accent" } : { text: "Offline", color: "grey" }
+}
 
 // --- Open
 const onClickOpen = async (esp: EspSchema) => {

@@ -10,6 +10,7 @@ const ErrorsView = () => import("@/views/app/ErrorsView.vue")
 const EspsView = () => import("@/views/app/EspsView.vue")
 const ThresholdsView = () => import("@/views/app/ThresholdsView.vue")
 const ControlsView = () => import("@/views/app/ControlsView.vue")
+const GraphsView = () => import("@/views/app/GraphsView.vue")
 const SettingsView = () => import("@/views/app/SettingsView.vue")
 const WelcomeView = () => import("@/views/WelcomeView.vue")
 const GuideView = () => import("@/views/GuideView.vue")
@@ -75,6 +76,13 @@ const routes: RouteRecordRaw[] = [
 		beforeEnter: [refreshAuth, requireAuth, requireEsp],
 	},
 	{
+		path: "/app/graphs",
+		name: "graphs",
+		meta: { layout: "app", esp: true },
+		component: GraphsView,
+		beforeEnter: [refreshAuth, requireAuth, requireEsp],
+	},
+	{
 		path: "/app/growth",
 		name: "growth",
 		meta: { layout: "app", esp: true },
@@ -103,7 +111,7 @@ const routes: RouteRecordRaw[] = [
 		beforeEnter: [refreshAuth, requireAuth, requireEsp],
 	},
 	// --- Pages that moved, kept so old links still land somewhere
-	{ path: "/app/monitor", redirect: "/app/home" },
+	{ path: "/app/monitor", redirect: "/app/graphs" },
 	{ path: "/app/error", redirect: "/app/errors" },
 	{ path: "/admin/thresholds", redirect: "/admin/accounts" },
 	{ path: "/admin/controls", redirect: "/admin/accounts" },

@@ -2,6 +2,7 @@
     <v-container class="">
         <v-row dense>
             <v-col cols="12">
+                <EspBreadcrumbs :items="[{ title: 'Settings' }]"></EspBreadcrumbs>
                 <h4 class="text-grey-darken-1">SETTINGS</h4>
             </v-col>
         </v-row>
@@ -30,12 +31,13 @@
                         </template>
                     </v-list-item>
                 </v-list>
-                <h5 class="mt-5 text-grey">Device</h5>
+                <h5 v-if="espStore.selected" class="mt-5 text-grey">Device</h5>
                 <v-list 
+                    v-if="espStore.selected"
                     rounded="lg"
                     density="compact"
                 >
-                    <v-list-item v-if="espStore.selected" to="/app/errors">
+                    <v-list-item to="/app/errors">
                         <template #prepend>
                             <v-icon color="error">mdi-alert-circle-outline</v-icon>
                         </template>
@@ -47,12 +49,13 @@
                             <v-icon>mdi-chevron-right</v-icon>
                         </template>
                     </v-list-item>
-                    <v-list-item to="/app/esps">
+                    <v-list-item to="/app/controls">
                         <template #prepend>
-                            <v-icon color="accent">mdi-chip</v-icon>
+                            <v-icon color="accent">mdi-toggle-switch-outline</v-icon>
                         </template>
                         <template #default>
-                            <div class="font-weight-bold">My Devices</div>
+                            <div class="font-weight-bold">Controls</div>
+                            <div style="font-size: x-small" class="text-grey">Automations and actuators of {{ espStore.selected.name }}</div>
                         </template>
                         <template #append>
                             <v-icon>mdi-chevron-right</v-icon>
@@ -84,6 +87,15 @@
                     <v-divider v-if="!isNative" class="my-2"></v-divider>
                     <v-list-item>
                         <v-btn
+                            text="My Devices"
+                            color="accent"
+                            class="w-100"
+                            prepend-icon="mdi-arrow-left"
+                            to="/app/esps"
+                        ></v-btn>
+                    </v-list-item>
+                    <v-list-item>
+                        <v-btn
                             text="Logout"
                             color="red"
                             class="w-100"
@@ -101,6 +113,7 @@
 
 <script setup lang="ts">
 import useToast from '@/composables/use-toast'
+import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue'
 import { ref } from 'vue'
 import { useTheme } from 'vuetify'
 import { useRouter } from 'vue-router'

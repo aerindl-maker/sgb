@@ -12,13 +12,13 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ControlSwitchCard: typeof import('./src/components/app/controls/ControlSwitchCard.vue')['default']
+    EspBreadcrumbs: typeof import('./src/components/app/EspBreadcrumbs.vue')['default']
     ImageBoundingBoxRenderer: typeof import('./src/components/app/growth/ImageBoundingBoxRenderer.vue')['default']
     ImageUploadCard: typeof import('./src/components/app/growth/ImageUploadCard.vue')['default']
     ParticleDot: typeof import('./src/components/ParticleDot.vue')['default']
     PlantCameraPreview: typeof import('./src/components/app/growth/PlantCameraPreview.vue')['default']
     PlantHeightCameraCard: typeof import('./src/components/app/growth/PlantHeightCameraCard.vue')['default']
     PlantHeightChart: typeof import('./src/components/app/growth/PlantHeightChart.vue')['default']
-    ReadingAnalytics: typeof import('./src/components/app/home/ReadingAnalytics.vue')['default']
     ReadingCard: typeof import('./src/components/app/home/ReadingCard.vue')['default']
     ReadingChart: typeof import('./src/components/app/monitor/ReadingChart.vue')['default']
     ReportExportForm: typeof import('./src/components/app/monitor/ReportExportForm.vue')['default']

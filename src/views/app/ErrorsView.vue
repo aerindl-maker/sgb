@@ -1,6 +1,9 @@
 <template>
 	<v-container class="pb-16">
 		<v-row dense align="center">
+			<v-col cols="12">
+				<EspBreadcrumbs :items="[{ title: 'Settings', to: '/app/settings' }, { title: 'Errors' }]"></EspBreadcrumbs>
+			</v-col>
 			<v-col cols="12" class="d-flex align-center justify-space-between">
 				<h4 class="text-grey-darken-1">ERRORS</h4>
 				<v-btn icon="mdi-refresh" color="accent" :loading="isFetchingFaults" @click="getFaults"></v-btn>
@@ -58,6 +61,7 @@
 
 <script setup lang="ts">
 import useToast from "@/composables/use-toast"
+import EspBreadcrumbs from "@/components/app/EspBreadcrumbs.vue"
 import { api } from "@/plugins/api"
 import { FaultSchema } from "@/schemas/FaultSchema"
 import { computed, onMounted, ref } from "vue"

@@ -2,6 +2,7 @@
     <v-container class="">
         <v-row dense align="center">
             <v-col cols="12">
+                <EspBreadcrumbs :items="[{ title: 'Settings', to: '/app/settings' }, { title: 'Controls' }]"></EspBreadcrumbs>
                 <h4 class="text-grey-darken-1">CONTROLS</h4>
                 <small class="text-grey">Manual overrides for testing the greenhouse hardware.</small>
             </v-col>
@@ -74,6 +75,7 @@
 
 <script setup lang="ts">
 import ControlSwitchCard from '@/components/app/controls/ControlSwitchCard.vue'
+import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue'
 import useToast from '@/composables/use-toast'
 import { ControlActuator, type ControlField } from '@/schemas/ControlSchema'
 import { useControlStore } from '@/stores/control'

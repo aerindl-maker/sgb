@@ -1,5 +1,5 @@
 <template>
-    <div id="printable">
+    <v-container id="printable">
         <v-row v-if="isPDFExporting" dense>
             <v-col cols="12" class="pt-5 d-flex flex-column align-center">
                 <h3 class="font-weight-black">SGB Monitoring Report</h3>
@@ -14,6 +14,9 @@
             </v-col>
         </v-row>
         <v-row v-if="!isPDFExporting" dense>
+            <v-col cols="12">
+                <EspBreadcrumbs :items="[{ title: 'Graphs' }]"></EspBreadcrumbs>
+            </v-col>
             <v-col cols="12" class="d-flex align-center justify-space-between">
                 <h4 class="text-grey-darken-1">GRAPHS</h4>
                 <v-btn
@@ -181,11 +184,12 @@
                 ></ReportExportForm>
             </v-card>
         </v-dialog>
-    </div>
+    </v-container>
 </template>
 
 <script setup lang="ts">
 import useToast from '@/composables/use-toast';
+import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue';
 import useFileSave from '@/composables/use-file-save';
 import PlantHeightChart from '@/components/app/growth/PlantHeightChart.vue';
 import ReadingChart from '@/components/app/monitor/ReadingChart.vue';
@@ -353,9 +357,9 @@ const onSubmitExport = async (values: ReportExportSchema) => {
 
 //
 
-// --- The dashboard loads the readings, only the plant data is fetched here
 const onMountedCb = async () => {
     await Promise.all([
+        readingStore.getReadings().catch(() => toastCmp.error("Something went wrong.")),
         plantHeightCmp.list().catch(() => toastCmp.error("Something went wrong.")),
         // A missing calibration only falls the estimate back to the frame scale.
         plantHeightCmp.listRatios().catch(() => undefined),

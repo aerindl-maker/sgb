@@ -2,6 +2,7 @@
     <v-container class="">
         <v-row dense>
             <v-col cols="12">
+                <EspBreadcrumbs :items="[{ title: 'Dashboard' }]"></EspBreadcrumbs>
                 <h4 class="text-grey-darken-1">DASHBOARD</h4>
             </v-col>
         </v-row>
@@ -67,13 +68,12 @@
                 ></ReadingCard>
             </v-col>
         </v-row>
-        <ReadingAnalytics class="mt-4"></ReadingAnalytics>
     </v-container>
 </template>
 
 <script setup lang="ts">
 import ReadingCard from '@/components/app/home/ReadingCard.vue';
-import ReadingAnalytics from '@/components/app/home/ReadingAnalytics.vue';
+import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue';
 import { useReadingStore } from '@/stores/reading';
 import { storeToRefs } from 'pinia';
 import { computed, onMounted } from 'vue';
