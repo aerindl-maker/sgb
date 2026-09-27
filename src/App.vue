@@ -110,6 +110,14 @@ const onWsEsp = (data: EspSchema[]) => {
 	z.array(EspSchema).parse(data).forEach(e => espStore.upsert(e))
 }
 
+// --- The server only streams a user's own esps, so the socket follows the signed-in user
+const connectWebsocket = () => {
+	websocketCmp.disconnect()
+	websocketCmp.connect(`${import.meta.env.VITE_API_URL}/ws/app?esp=all`)
+}
+
+watch(() => authStore.user?.id, connectWebsocket)
+
 // --- Push Notifications
 const onReceivedPushNotification = (notification: PushNotificationSchema) => {
 	if (!notification.title || !notification.body) return
@@ -141,7 +149,7 @@ const onMountedCb = async () => {
 	themeCmp.change(savedTheme)
 
 	// --- Reading
-	websocketCmp.connect(`${import.meta.env.VITE_API_URL}/ws/app?esp=all`)
+	connectWebsocket()
 	websocketCmp.subscribe("Reading", "Create", onWsReading)
 	websocketCmp.subscribe("Esp", "Update", onWsEsp)
 

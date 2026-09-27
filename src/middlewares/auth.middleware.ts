@@ -1,5 +1,6 @@
 import useToast from "@/composables/use-toast";
 import { useAuthStore } from "@/stores/auth";
+import { useEspStore } from "@/stores/esp";
 import type { NavigationGuard } from "vue-router";
 
 //
@@ -24,10 +25,16 @@ const redirectAuth: NavigationGuard = async (to, from) => {
     const authStore = useAuthStore()
     if (authStore.user === undefined) return
     
-    const path = authStore.user.role == "Admin" ? "/admin/accounts" : "/app/home"
+    const path = authStore.user.role == "Admin" ? "/admin/accounts" : "/app/esps"
     if (to.path != path) return path
+}
+
+// --- Esp pages need a device picked from the list first
+const requireEsp: NavigationGuard = async (to, from) => {
+    const espStore = useEspStore()
+    if (espStore.selectedId === undefined) return "/app/esps"
 }
 
 //
 
-export { refreshAuth, requireAuth, redirectAuth }
+export { refreshAuth, requireAuth, redirectAuth, requireEsp }

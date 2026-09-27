@@ -124,6 +124,7 @@ import useCldDetection from "@/composables/use-cld-detection"
 import useFileSave from "@/composables/use-file-save"
 import usePlantDetection from "@/composables/use-plant-detection"
 import usePlantHeight from "@/composables/use-plant-height"
+import { useEspStore } from "@/stores/esp"
 import useToast from "@/composables/use-toast"
 import { api } from "@/plugins/api"
 import type { CaptureSchema } from "@/schemas/CaptureSchema"
@@ -271,6 +272,7 @@ const onMountedPlantDetection = async () => {
 
 // --- Plant Height History
 const plantHeightCmp = usePlantHeight()
+const espStore = useEspStore()
 const { centimetersPerPixel: plantCentimetersPerPixel } = plantHeightCmp
 const plantCapturePreparing = ref(false)
 const plantCaptureBusy = computed(() => plantCapturePreparing.value || plantHeightCmp.saving.value)
@@ -320,6 +322,7 @@ const onClickUpload = async () => {
 
 	const form = new FormData()
 	form.append("object", "Leaf")
+	if (espStore.selectedId) form.append("espId", espStore.selectedId.toString())
 	form.append("image", scanDrawFrameBlob.value)
 	const cres = await api.postForm<CaptureSchema>("/api/capture", form)
 	await api.post(`/api/capture/${cres.data.id}/detection/bulk`, detections.value)

@@ -67,15 +67,16 @@
                 ></ReadingCard>
             </v-col>
         </v-row>
+        <ReadingAnalytics class="mt-4"></ReadingAnalytics>
     </v-container>
 </template>
 
 <script setup lang="ts">
 import ReadingCard from '@/components/app/home/ReadingCard.vue';
+import ReadingAnalytics from '@/components/app/home/ReadingAnalytics.vue';
 import { useReadingStore } from '@/stores/reading';
 import { storeToRefs } from 'pinia';
-import { computed, onMounted, watch } from 'vue';
-import { useEspStore } from '@/stores/esp';
+import { computed, onMounted } from 'vue';
 
 //
 
@@ -95,10 +96,6 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
-
-// --- Reload when another esp is picked
-const { selectedId } = storeToRefs(useEspStore())
-watch(selectedId, onMountedCb)
 
 //
 

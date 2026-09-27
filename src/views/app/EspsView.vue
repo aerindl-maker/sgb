@@ -1,26 +1,34 @@
 <template>
     <v-container class="pb-16">
         <v-row dense align="center">
-            <v-col cols="12">
-                <h4 class="text-grey-darken-1">ESP Devices</h4>
-                <small class="text-grey">Each greenhouse board connects with its own key.</small>
+            <v-col cols="12" class="d-flex align-center justify-space-between">
+                <div>
+                    <h4 class="text-grey-darken-1">MY DEVICES</h4>
+                    <small class="text-grey">Pick a greenhouse to see its readings and controls.</small>
+                </div>
+                <v-btn icon="mdi-cog" variant="text" to="/app/settings"></v-btn>
             </v-col>
         </v-row>
         <v-row dense class="mt-2">
             <v-col v-if="isFetchingEsps" v-for="n in [1, 2]" :key="n" cols="12" md="6">
                 <v-skeleton-loader type="list-item-avatar-two-line"></v-skeleton-loader>
             </v-col>
+            <v-col v-else-if="!esps.length" cols="12">
+                <v-card elevation="1" class="py-5">
+                    <v-card-text class="d-flex flex-column align-center ga-2 text-grey text-center">
+                        <v-icon icon="mdi-chip" color="accent" size="36"></v-icon>
+                        <span>No devices yet. Tap + to add your first ESP.</span>
+                    </v-card-text>
+                </v-card>
+            </v-col>
             <v-col v-else v-for="esp in esps" :key="esp.id" cols="12" md="6">
-                <v-card elevation="1" :class="{ 'opacity-60': !esp.enabled }">
+                <v-card elevation="1" :class="{ 'opacity-60': !esp.enabled }" @click="onClickOpen(esp)">
                     <v-card-text class="d-flex align-center ga-3">
                         <v-avatar :color="esp.online ? `accent` : `grey`" variant="tonal">
                             <v-icon icon="mdi-chip"></v-icon>
                         </v-avatar>
                         <div class="flex-grow-1">
-                            <div class="font-weight-bold">
-                                <span>{{ esp.name }}</span>
-                                <span v-if="esp.id == DEFAULT_ESP_ID" class="text-grey font-weight-regular"> (Default)</span>
-                            </div>
+                            <div class="font-weight-bold">{{ esp.name }}</div>
                             <div style="font-size: x-small" class="text-grey">
                                 <span>{{ !esp.enabled ? "Disabled" : esp.online ? "Online" : "Offline" }}</span>
                                 <span v-if="esp.lastSeenAt"> · Last seen {{ dateCmp.format(esp.lastSeenAt, "keyboardDateTime12h") }}</span>
@@ -28,7 +36,7 @@
                         </div>
                         <v-menu location="bottom end">
                             <template #activator="{ props }">
-                                <v-btn v-bind="props" size="small" icon="mdi-dots-vertical" variant="text"></v-btn>
+                                <v-btn v-bind="props" size="small" icon="mdi-dots-vertical" variant="text" @click.stop></v-btn>
                             </template>
                             <v-list density="compact" rounded="lg">
                                 <v-list-item prepend-icon="mdi-pencil-outline" title="Rename" @click="onClickRename(esp)"></v-list-item>
@@ -125,11 +133,13 @@ import { useEspStore } from '@/stores/esp'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useDate } from 'vuetify'
+import { useRouter } from 'vue-router'
 
 //
 
 // --- Utils
 const dateCmp = useDate()
+const routerCmp = useRouter()
 const toastCmp = useToast()
 const toError = (err: any) => err?.response?.data || err?.message || "Something went wrong."
 
@@ -137,6 +147,12 @@ const toError = (err: any) => err?.response?.data || err?.message || "Something 
 const espStore = useEspStore()
 const { esps } = storeToRefs(espStore)
 const isFetchingEsps = ref(false)
+
+// --- Open
+const onClickOpen = async (esp: EspSchema) => {
+    espStore.select(esp.id)
+    await routerCmp.push("/app/home")
+}
 
 // --- Add & Rename
 const espToRename = ref<EspSchema>()

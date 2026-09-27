@@ -8,12 +8,22 @@
 					height="max(120px, 10dvh)"
 				></v-sheet>
 			</v-sheet>
-			<div class="esp-select position-fixed top-0 right-0 pa-3">
-				<EspSelect></EspSelect>
+			<div v-if="inEsp" class="esp-back position-fixed top-0 left-0 pa-3">
+				<v-chip
+					to="/app/esps"
+					color="white"
+					variant="flat"
+					class="text-grey-darken-3"
+					prepend-icon="mdi-chevron-left"
+				>
+					<v-badge dot inline :color="selected?.online ? `accent` : `grey`" class="mr-2"></v-badge>
+					<span>{{ selected?.name ?? "Devices" }}</span>
+				</v-chip>
 			</div>
 			<slot></slot>
 		</v-main>
 		<v-bottom-navigation
+			v-if="inEsp"
 			grow
 			fixed
 			mode="shift"
@@ -24,17 +34,17 @@
 				<v-icon>mdi-home</v-icon>
 				<span>Home</span>
 			</v-btn>
-			<v-btn to="/app/monitor" value="monitor">
-				<v-icon>mdi-chart-bar</v-icon>
-				<span>Monitor</span>
-			</v-btn>
 			<v-btn to="/app/growth" value="growth">
 				<v-icon>mdi-sprout</v-icon>
 				<span>Growth</span>
 			</v-btn>
-			<v-btn to="/app/error" value="error">
-				<v-icon>mdi-alert-circle-outline</v-icon>
-				<span>Errors</span>
+			<v-btn to="/app/controls" value="controls">
+				<v-icon>mdi-toggle-switch-outline</v-icon>
+				<span>Controls</span>
+			</v-btn>
+			<v-btn to="/app/thresholds" value="thresholds">
+				<v-icon>mdi-tune-vertical</v-icon>
+				<span>Thresholds</span>
 			</v-btn>
 			<v-btn to="/app/settings" value="settings">
 				<v-icon>mdi-cog</v-icon>
@@ -45,11 +55,39 @@
 </template>
 
 <script setup lang="ts">
-import EspSelect from '@/components/EspSelect.vue'
+import { useEspStore } from '@/stores/esp'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+//
+
+// --- Router
+const route = useRoute()
+const router = useRouter()
+
+// --- Esp
+const espStore = useEspStore()
+const { selected, selectedId } = storeToRefs(espStore)
+
+// --- The device list is the entry point, esp pages sit behind it
+const inEsp = computed(() => selectedId.value !== undefined && route.name != "esps")
+
+// --- A remembered esp may have been disabled or handed over since last visit
+const onMountedCb = async () => {
+	if (espStore.esps.length) return
+	await espStore.getEsps().catch(() => undefined)
+	if (selectedId.value === undefined && route.meta.esp) await router.replace("/app/esps")
+}
+
+onMounted(onMountedCb)
+
+//
+
 </script>
 
 <style scoped>
-.esp-select {
+.esp-back {
 	z-index: 1000;
 	padding-top: max(12px, env(safe-area-inset-top)) !important;
 }

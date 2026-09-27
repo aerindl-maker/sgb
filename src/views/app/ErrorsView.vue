@@ -60,7 +60,7 @@
 import useToast from "@/composables/use-toast"
 import { api } from "@/plugins/api"
 import { FaultSchema } from "@/schemas/FaultSchema"
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useEspStore } from "@/stores/esp"
 import { useDate } from "vuetify"
 import z from "zod"
@@ -124,7 +124,6 @@ const getFaults = async () => {
 //
 
 onMounted(getFaults)
-watch(() => espStore.selectedId, getFaults)
 
 //
 </script>

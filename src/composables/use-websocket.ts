@@ -27,6 +27,9 @@ export default () => {
 
     const disconnect = () => {
         if (!websocket.value) return
+        // --- A late close event must not mark a newer socket as disconnected
+        websocket.value.onclose = null
+        websocket.value.onmessage = null
         websocket.value.close()
         websocket.value = undefined
         connected.value = false

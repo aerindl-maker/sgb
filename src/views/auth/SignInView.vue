@@ -58,7 +58,7 @@ const onSubmitSignIn = async (
     await authStore.signIn(values)
         .then(() => toastCmp.success("User signed-in successfully."))
         .then(() => pushStore.connect())
-        .then(async () => await routerCmp.push(authStore.user?.role == "Admin" ? "/admin/accounts" : "/app/home"))
+        .then(async () => await routerCmp.push(authStore.user?.role == "Admin" ? "/admin/accounts" : "/app/esps"))
         .catch((e) => toastCmp.error(e?.status == 400 ? "Incorrect credentials provided." : "Something went wrong."))
 }
 

@@ -2,7 +2,7 @@
     <v-container class="">
         <v-row dense align="center">
             <v-col cols="12">
-                <h4 class="text-grey-darken-1">Controls</h4>
+                <h4 class="text-grey-darken-1">CONTROLS</h4>
                 <small class="text-grey">Manual overrides for testing the greenhouse hardware.</small>
             </v-col>
         </v-row>
@@ -73,13 +73,12 @@
 </template>
 
 <script setup lang="ts">
-import ControlSwitchCard from '@/components/admin/controls/ControlSwitchCard.vue'
+import ControlSwitchCard from '@/components/app/controls/ControlSwitchCard.vue'
 import useToast from '@/composables/use-toast'
 import { ControlActuator, type ControlField } from '@/schemas/ControlSchema'
 import { useControlStore } from '@/stores/control'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref, watch } from 'vue'
-import { useEspStore } from '@/stores/esp'
+import { onMounted, ref } from 'vue'
 
 //
 
@@ -130,7 +129,6 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
-watch(() => useEspStore().selectedId, onMountedCb)
 
 //
 

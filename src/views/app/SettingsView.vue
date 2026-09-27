@@ -30,6 +30,35 @@
                         </template>
                     </v-list-item>
                 </v-list>
+                <h5 class="mt-5 text-grey">Device</h5>
+                <v-list 
+                    rounded="lg"
+                    density="compact"
+                >
+                    <v-list-item v-if="espStore.selected" to="/app/errors">
+                        <template #prepend>
+                            <v-icon color="error">mdi-alert-circle-outline</v-icon>
+                        </template>
+                        <template #default>
+                            <div class="font-weight-bold">System Errors</div>
+                            <div style="font-size: x-small" class="text-grey">Sensor faults of {{ espStore.selected.name }}</div>
+                        </template>
+                        <template #append>
+                            <v-icon>mdi-chevron-right</v-icon>
+                        </template>
+                    </v-list-item>
+                    <v-list-item to="/app/esps">
+                        <template #prepend>
+                            <v-icon color="accent">mdi-chip</v-icon>
+                        </template>
+                        <template #default>
+                            <div class="font-weight-bold">My Devices</div>
+                        </template>
+                        <template #append>
+                            <v-icon>mdi-chevron-right</v-icon>
+                        </template>
+                    </v-list-item>
+                </v-list>
                 <h5 class="mt-5 text-grey">Actions</h5>
                 <v-list 
                     rounded="lg"
@@ -76,6 +105,7 @@ import { ref } from 'vue'
 import { useTheme } from 'vuetify'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useEspStore } from '@/stores/esp'
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
 
@@ -83,6 +113,7 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 
 // --- Utils
 const toastCmp = useToast()
+const espStore = useEspStore()
 const routerCmp = useRouter()
 
 // --- App

@@ -8,6 +8,7 @@ import {
 import type { ReportFilterSchema, ReportQuerySchema } from "@/schemas/ReportSchema"
 import { computed, ref } from "vue"
 import type { z } from "zod"
+import { useEspStore } from "@/stores/esp"
 
 //
 
@@ -23,6 +24,7 @@ type PlantCaptureInput = {
 export default () => {
 	//
 
+	const espStore = useEspStore()
 	const heights = ref<PlantHeightSchema[]>([])
 	const ratios = ref<PixelToCmRatioSchema[]>([])
 	const loading = ref(false)
@@ -37,7 +39,7 @@ export default () => {
 		loading.value = true
 
 		try {
-			const response = await api.get("/api/plant/heights", { params: { limit: 100 } })
+			const response = await api.get("/api/plant/heights", { params: { limit: 100, espId: espStore.selectedId } })
 			const data = PlantHeightSchema.array().parse(response.data)
 			heights.value = data
 			return data
@@ -48,12 +50,12 @@ export default () => {
 
 	/** Fetches a page of heights without touching the charted list. */
 	const query = async (params: ReportQuerySchema) => {
-		const response = await api.get("/api/plant/heights", { params })
+		const response = await api.get("/api/plant/heights", { params: { ...params, espId: espStore.selectedId } })
 		return PlantHeightSchema.array().parse(response.data)
 	}
 
 	const count = async (filter: ReportFilterSchema) => {
-		const params = { alpha: filter.alpha ?? undefined, omega: filter.omega ?? undefined }
+		const params = { alpha: filter.alpha ?? undefined, omega: filter.omega ?? undefined, espId: espStore.selectedId }
 		const response = await api.get<{ count: number }>("/api/plant/heights/count", { params })
 		return Number(response.data.count)
 	}
@@ -75,6 +77,7 @@ export default () => {
 			form.append("detections", JSON.stringify(detections))
 			form.append("frameWidth", input.frameWidth.toString())
 			form.append("frameHeight", input.frameHeight.toString())
+			if (espStore.selectedId) form.append("espId", espStore.selectedId.toString())
 
 			const response = await api.post("/api/plant/captures", form)
 			const data = PlantCaptureResponseSchema.parse(response.data)

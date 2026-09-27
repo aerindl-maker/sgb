@@ -1,6 +1,7 @@
 import { api } from "@/plugins/api"
 import { ref } from "vue"
 import { defineStore } from "pinia"
+import { useEspStore } from "@/stores/esp"
 import type { UserSafeSchema, UserSignInSchema } from "@/schemas/UserSchema"
 
 //
@@ -34,6 +35,7 @@ export const useAuthStore = defineStore("auth", () => {
     const signOut = async () => {
         await api.post<UserSafeSchema>("/api/auth/sign-out")
         user.value = undefined
+        useEspStore().clear()
     }
 
     //

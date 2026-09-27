@@ -1,22 +1,21 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
-import { redirectAuth, refreshAuth, requireAuth } from "@/middlewares/auth.middleware"
+import { redirectAuth, refreshAuth, requireAuth, requireEsp } from "@/middlewares/auth.middleware"
 
 //
 
 const SignInView = () => import("@/views/auth/SignInView.vue")
 const HomeView = () => import("@/views/app/HomeView.vue")
-const MonitorView = () => import("@/views/app/MonitorView.vue")
 const GrowthView = () => import("@/views/app/GrowthView.vue")
-const ErrorView = () => import("@/views/app/ErrorView.vue")
+const ErrorsView = () => import("@/views/app/ErrorsView.vue")
+const EspsView = () => import("@/views/app/EspsView.vue")
+const ThresholdsView = () => import("@/views/app/ThresholdsView.vue")
+const ControlsView = () => import("@/views/app/ControlsView.vue")
 const SettingsView = () => import("@/views/app/SettingsView.vue")
 const WelcomeView = () => import("@/views/WelcomeView.vue")
 const GuideView = () => import("@/views/GuideView.vue")
 const AdminAccountsView = () => import("@/views/admin/AdminAccountsView.vue")
-const AdminThresholdsView = () => import("@/views/admin/AdminThresholdsView.vue")
-const AdminControlsView = () => import("@/views/admin/AdminControlsView.vue")
 const AdminDetectionView = () => import("@/views/admin/AdminDetectionView.vue")
 const AdminSettingsView = () => import("@/views/admin/AdminSettingsView.vue")
-const AdminEspsView = () => import("@/views/admin/AdminEspsView.vue")
 
 //
 
@@ -48,20 +47,6 @@ const routes: RouteRecordRaw[] = [
 		beforeEnter: [refreshAuth, requireAuth],
 	},
 	{
-		path: "/admin/thresholds",
-		name: "admin thresholds",
-		meta: { layout: "admin" },
-		component: AdminThresholdsView,
-		beforeEnter: [refreshAuth, requireAuth],
-	},
-	{
-		path: "/admin/controls",
-		name: "admin controls",
-		meta: { layout: "admin" },
-		component: AdminControlsView,
-		beforeEnter: [refreshAuth, requireAuth],
-	},
-	{
 		path: "/admin/detection",
 		name: "admin detection",
 		meta: { layout: "admin" },
@@ -76,40 +61,53 @@ const routes: RouteRecordRaw[] = [
 		beforeEnter: [refreshAuth, requireAuth],
 	},
 	{
-		path: "/admin/esps",
-		name: "admin esps",
-		meta: { layout: "admin" },
-		component: AdminEspsView,
+		path: "/app/esps",
+		name: "esps",
+		meta: { layout: "app" },
+		component: EspsView,
 		beforeEnter: [refreshAuth, requireAuth],
 	},
 	{
 		path: "/app/home",
 		name: "home",
-		meta: { layout: "app" },
+		meta: { layout: "app", esp: true },
 		component: HomeView,
-		beforeEnter: [refreshAuth, requireAuth],
-	},
-	{
-		path: "/app/monitor",
-		name: "monitor",
-		meta: { layout: "app" },
-		component: MonitorView,
-		beforeEnter: [refreshAuth, requireAuth],
+		beforeEnter: [refreshAuth, requireAuth, requireEsp],
 	},
 	{
 		path: "/app/growth",
 		name: "growth",
-		meta: { layout: "app" },
+		meta: { layout: "app", esp: true },
 		component: GrowthView,
-		beforeEnter: [refreshAuth, requireAuth],
+		beforeEnter: [refreshAuth, requireAuth, requireEsp],
 	},
 	{
-		path: "/app/error",
-		name: "error",
-		meta: { layout: "app" },
-		component: ErrorView,
-		beforeEnter: [refreshAuth, requireAuth],
+		path: "/app/controls",
+		name: "controls",
+		meta: { layout: "app", esp: true },
+		component: ControlsView,
+		beforeEnter: [refreshAuth, requireAuth, requireEsp],
 	},
+	{
+		path: "/app/thresholds",
+		name: "thresholds",
+		meta: { layout: "app", esp: true },
+		component: ThresholdsView,
+		beforeEnter: [refreshAuth, requireAuth, requireEsp],
+	},
+	{
+		path: "/app/errors",
+		name: "errors",
+		meta: { layout: "app", esp: true },
+		component: ErrorsView,
+		beforeEnter: [refreshAuth, requireAuth, requireEsp],
+	},
+	// --- Pages that moved, kept so old links still land somewhere
+	{ path: "/app/monitor", redirect: "/app/home" },
+	{ path: "/app/error", redirect: "/app/errors" },
+	{ path: "/admin/thresholds", redirect: "/admin/accounts" },
+	{ path: "/admin/controls", redirect: "/admin/accounts" },
+	{ path: "/admin/esps", redirect: "/admin/accounts" },
 	{
 		path: "/app/settings",
 		name: "settings",

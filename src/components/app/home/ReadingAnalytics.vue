@@ -1,9 +1,9 @@
 <template>
-    <v-container id="printable">
+    <div id="printable">
         <v-row v-if="isPDFExporting" dense>
             <v-col cols="12" class="pt-5 d-flex flex-column align-center">
                 <h3 class="font-weight-black">SGB Monitoring Report</h3>
-                <span v-if="espStore.esps.length > 1" class="font-weight-bold">{{ espStore.selected?.name }}</span>
+                <span class="font-weight-bold">{{ espStore.selected?.name }}</span>
                 <span class="text-grey text-center">
                     <span>Reports from &nbsp;</span>
                     <span>{{ dateCmp.format(readingSorted[0]?.createdAt, "fullDateTime12h") }} to &nbsp;</span>
@@ -181,7 +181,7 @@
                 ></ReportExportForm>
             </v-card>
         </v-dialog>
-    </v-container>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -194,7 +194,7 @@ import ReportExportMenu from '@/components/app/monitor/ReportExportMenu.vue';
 import usePlantHeight from '@/composables/use-plant-height';
 import { useDate, useTheme } from 'vuetify';
 import { useReadingStore } from '@/stores/reading';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useEspStore } from '@/stores/esp';
 import { storeToRefs } from 'pinia';
 import useReport, { type ReportRow } from '@/composables/use-report';
@@ -353,9 +353,9 @@ const onSubmitExport = async (values: ReportExportSchema) => {
 
 //
 
+// --- The dashboard loads the readings, only the plant data is fetched here
 const onMountedCb = async () => {
     await Promise.all([
-        readingStore.getReadings().catch(() => toastCmp.error("Something went wrong.")),
         plantHeightCmp.list().catch(() => toastCmp.error("Something went wrong.")),
         // A missing calibration only falls the estimate back to the frame scale.
         plantHeightCmp.listRatios().catch(() => undefined),
@@ -363,9 +363,6 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
-
-// --- Plant heights aren't tied to an esp, only readings reload
-watch(() => espStore.selectedId, () => readingStore.getReadings().catch(() => toastCmp.error("Something went wrong.")))
 
 //
 

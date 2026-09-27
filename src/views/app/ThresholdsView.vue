@@ -2,7 +2,7 @@
     <v-container class="">
         <v-row dense align="center">
             <v-col cols="12">
-                <h4 class="text-grey-darken-1">Thresholds</h4>
+                <h4 class="text-grey-darken-1">THRESHOLDS</h4>
             </v-col>
         </v-row>
         <v-row dense>
@@ -88,14 +88,13 @@
 <script setup lang="ts">
 import { api } from '@/plugins/api'
 import { ThresholdDeleteSchema, ThresholdSchema, type ThresholdCreateSchema, type ThresholdUpdateSchema } from '@/schemas/ThresholdSchema'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useEspStore } from '@/stores/esp';
+import { computed, onMounted, reactive, ref } from 'vue'
 import type { SubmissionContext } from 'vee-validate';
 import useToast from '@/composables/use-toast';
-import ThresholdCard from '@/components/admin/thresholds/ThresholdCard.vue';
-import ThresholdCreateForm from '@/components/admin/thresholds/ThresholdCreateForm.vue';
-import ThresholdUpdateForm from '@/components/admin/thresholds/ThresholdUpdateForm.vue';
-import ThresholdDeleteForm from '@/components/admin/thresholds/ThresholdDeleteForm.vue';
+import ThresholdCard from '@/components/app/thresholds/ThresholdCard.vue';
+import ThresholdCreateForm from '@/components/app/thresholds/ThresholdCreateForm.vue';
+import ThresholdUpdateForm from '@/components/app/thresholds/ThresholdUpdateForm.vue';
+import ThresholdDeleteForm from '@/components/app/thresholds/ThresholdDeleteForm.vue';
 import { useReadingStore } from '@/stores/reading';
 import { useThresholdStore } from '@/stores/threshold';
 import { storeToRefs } from 'pinia';
@@ -202,7 +201,6 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
-watch(() => useEspStore().selectedId, onMountedCb)
 
 //
 

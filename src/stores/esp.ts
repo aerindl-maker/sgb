@@ -1,5 +1,5 @@
 import { api } from "@/plugins/api";
-import { DEFAULT_ESP_ID, EspSchema, EspWithKeySchema, type EspCreateSchema, type EspUpdateSchema } from "@/schemas/EspSchema";
+import { EspSchema, EspWithKeySchema, type EspCreateSchema, type EspUpdateSchema } from "@/schemas/EspSchema";
 import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
 import z from "zod";
@@ -11,7 +11,8 @@ export const useEspStore = defineStore("esp", () => {
     //
 
     const esps = reactive<EspSchema[]>([])
-    const selectedId = ref(DEFAULT_ESP_ID)
+    // --- Picked from the device list, every esp page reads it
+    const selectedId = ref<number>()
     const selected = computed(() => esps.find((e) => e.id == selectedId.value))
     const enableds = computed(() => esps.filter((e) => e.enabled))
 
@@ -24,8 +25,14 @@ export const useEspStore = defineStore("esp", () => {
         return esp
     }
 
-    const select = (id: number) => {
+    const select = (id?: number) => {
         selectedId.value = id
+    }
+
+    // --- Another account may sign in next on this device
+    const clear = () => {
+        esps.splice(0, esps.length)
+        selectedId.value = undefined
     }
 
     //
@@ -35,9 +42,9 @@ export const useEspStore = defineStore("esp", () => {
         const parsed = z.array(EspSchema).parse(res.data)
         esps.splice(0, esps.length, ...parsed)
 
-        // --- Fall back when the remembered esp was disabled
-        const valid = parsed.some((e) => e.id == selectedId.value && e.enabled)
-        if (!valid) selectedId.value = DEFAULT_ESP_ID
+        // --- Forget a remembered esp that's no longer owned
+        const owned = parsed.some((e) => e.id == selectedId.value)
+        if (!owned) selectedId.value = undefined
         return parsed
     }
 
@@ -50,9 +57,7 @@ export const useEspStore = defineStore("esp", () => {
 
     const patchEsp = async (id: number, data: EspUpdateSchema) => {
         const res = await api.patch<EspSchema>(`/api/esp/${id}`, data)
-        const parsed = upsert(EspSchema.parse(res.data))
-        if (!parsed.enabled && selectedId.value == id) selectedId.value = DEFAULT_ESP_ID
-        return parsed
+        return upsert(EspSchema.parse(res.data))
     }
 
     const regenerateKey = async (id: number) => {
@@ -71,6 +76,7 @@ export const useEspStore = defineStore("esp", () => {
         enableds,
         upsert,
         select,
+        clear,
         getEsps,
         postEsp,
         patchEsp,

@@ -30,23 +30,6 @@
                         </template>
                     </v-list-item>
                 </v-list>
-                <h5 class="mt-5 text-grey">Devices</h5>
-                <v-list 
-                    rounded="lg"
-                    density="compact"
-                >
-                    <v-list-item to="/admin/esps">
-                        <template #prepend>
-                            <v-icon color="accent">mdi-chip</v-icon>
-                        </template>
-                        <template #default>
-                            <div class="font-weight-bold">ESP Devices</div>
-                        </template>
-                        <template #append>
-                            <v-icon>mdi-chevron-right</v-icon>
-                        </template>
-                    </v-list-item>
-                </v-list>
                 <h5 class="mt-5 text-grey">Actions</h5>
                 <v-list 
                     rounded="lg"
