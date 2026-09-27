@@ -9,10 +9,24 @@
 			:disabled="isSubmitting || disabled"
 			:error-messages="emailError"
 		></v-text-field>
+		<div class="w-75 mt-3">
+			<small class="text-grey">Code</small>
+			<v-otp-input
+				length="6"
+				type="number"
+				color="accent"
+				variant="underlined"
+				class="px-0"
+				v-model="code"
+				:disabled="isSubmitting || disabled"
+				:error="!!codeError"
+			></v-otp-input>
+			<div v-if="codeError" class="text-caption text-error text-center">{{ codeError }}</div>
+		</div>
 		<v-text-field
 			color="accent"
 			class="w-75"
-			label="Password"
+			label="New Password"
 			v-model="password"
 			:type="showPasswordType"
 			:disabled="isSubmitting || disabled"
@@ -20,17 +34,20 @@
 			:append-inner-icon="showPasswordIcon"
 			@click:append-inner="showPassword = !showPassword"
 		></v-text-field>
-		<div class="w-75 d-flex justify-end mt-n2 mb-1">
-			<router-link
-				to="/auth/forgot-password"
-				class="text-caption text-accent text-decoration-none"
-			>Forgot password?</router-link>
-		</div>
-		<v-btn 
-			type="submit" 
-			text="Sign In" 
-			class="w-75 my-2" 
-			color="accent" 
+		<v-text-field
+			color="accent"
+			class="w-75"
+			label="Confirm Password"
+			v-model="confirm"
+			:type="showPasswordType"
+			:disabled="isSubmitting || disabled"
+			:error-messages="confirmError"
+		></v-text-field>
+		<v-btn
+			type="submit"
+			text="Reset Password"
+			class="w-75 my-2"
+			color="accent"
 			:disabled
 			:loading="isSubmitting"
 		></v-btn>
@@ -38,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { UserSignInSchema } from "@/schemas/UserSchema"
+import { UserResetPasswordSchema } from "@/schemas/UserSchema"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useField, useForm, type SubmissionContext } from "vee-validate"
 import { computed, ref } from "vue"
@@ -46,21 +63,30 @@ import { computed, ref } from "vue"
 //
 
 const props = defineProps<{
+	email?: string
 	disabled?: boolean
 	onError?: (error: any) => any
-	onSubmit?: (values: UserSignInSchema, ctx: SubmissionContext<{ [K in keyof UserSignInSchema]?: unknown }>) => any
+	onSubmit?: (values: UserResetPasswordSchema, ctx: SubmissionContext<{ [K in keyof UserResetPasswordSchema]?: unknown }>) => any
 }>()
 
-const { handleSubmit, isSubmitting } = useForm({ validationSchema: toTypedSchema(UserSignInSchema) })
+const { handleSubmit, isSubmitting } = useForm({
+	validationSchema: toTypedSchema(UserResetPasswordSchema),
+	initialValues: { email: props.email ?? "", code: "" },
+})
 
 const { value: email, errorMessage: emailError } = useField<string>("email")
+const { value: code, errorMessage: codeError } = useField<string>("code")
 const { value: password, errorMessage: passwordError } = useField<string>("password")
+const { value: confirm, errorMessage: confirmError } = useField<string>("confirm")
 
 const showPassword = ref(false)
 const showPasswordType = computed(() => (showPassword.value ? "text" : "password"))
 const showPasswordIcon = computed(() => (showPassword.value ? "mdi-eye-off" : "mdi-eye"))
 
 //
+
+// --- The view reads it to resend the code
+defineExpose({ email })
 
 const onSubmit = handleSubmit(async (values, ctx) => {
 	await Promise.resolve()

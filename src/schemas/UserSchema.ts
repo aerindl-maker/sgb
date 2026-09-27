@@ -24,6 +24,13 @@ const UserSignInSchema = UserSchema.pick({ email: true, password: true })
 const UserCreateSchema = UserSchema.omit({ id: true, createdAt: true, updatedAt: true })
 const UserUpdateSchema = UserSchema.omit({ id: true, createdAt: true, updatedAt: true }).partial()
 const UserDeleteSchema = UserSchema.pick({ name: true })
+const UserForgotPasswordSchema = UserSchema.pick({ email: true })
+const UserResetPasswordSchema = UserSchema.pick({ email: true, password: true })
+    .extend({
+        code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code."),
+        confirm: z.string().min(1, "Confirm your new password."),
+    })
+    .refine((v) => v.password == v.confirm, { message: "Passwords do not match.", path: ["confirm"] })
 
 //
 
@@ -34,6 +41,8 @@ type UserSignInSchema = z.infer<typeof UserSignInSchema>
 type UserCreateSchema = z.infer<typeof UserCreateSchema>
 type UserUpdateSchema = z.infer<typeof UserUpdateSchema>
 type UserDeleteSchema = z.infer<typeof UserDeleteSchema>
+type UserForgotPasswordSchema = z.infer<typeof UserForgotPasswordSchema>
+type UserResetPasswordSchema = z.infer<typeof UserResetPasswordSchema>
 
 //
 
@@ -46,4 +55,6 @@ export {
     UserCreateSchema,
     UserUpdateSchema,
     UserDeleteSchema,
+    UserForgotPasswordSchema,
+    UserResetPasswordSchema,
 }

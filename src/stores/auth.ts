@@ -2,7 +2,12 @@ import { api } from "@/plugins/api"
 import { ref } from "vue"
 import { defineStore } from "pinia"
 import { useEspStore } from "@/stores/esp"
-import type { UserSafeSchema, UserSignInSchema } from "@/schemas/UserSchema"
+import type {
+    UserSafeSchema,
+    UserSignInSchema,
+    UserForgotPasswordSchema,
+    UserResetPasswordSchema,
+} from "@/schemas/UserSchema"
 
 //
 
@@ -38,6 +43,15 @@ export const useAuthStore = defineStore("auth", () => {
         useEspStore().clear()
     }
 
+    // --- Goes through the backend, which does the mailing
+    const forgotPassword = async (data: UserForgotPasswordSchema) => {
+        await api.post("/api/auth/forgot-password", data)
+    }
+
+    const resetPassword = async ({ confirm, ...data }: UserResetPasswordSchema) => {
+        await api.post("/api/auth/reset-password", data)
+    }
+
     //
 
     return {
@@ -45,6 +59,8 @@ export const useAuthStore = defineStore("auth", () => {
         whoami,
         signIn,
         signOut,
+        forgotPassword,
+        resetPassword,
     }
 
 }, { persist: true })

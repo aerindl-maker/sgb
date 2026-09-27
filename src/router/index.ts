@@ -4,6 +4,8 @@ import { redirectAuth, refreshAuth, requireAuth, requireEsp } from "@/middleware
 //
 
 const SignInView = () => import("@/views/auth/SignInView.vue")
+const ForgotPasswordView = () => import("@/views/auth/ForgotPasswordView.vue")
+const ResetPasswordView = () => import("@/views/auth/ResetPasswordView.vue")
 const HomeView = () => import("@/views/app/HomeView.vue")
 const GrowthView = () => import("@/views/app/GrowthView.vue")
 const ErrorsView = () => import("@/views/app/ErrorsView.vue")
@@ -38,6 +40,20 @@ const routes: RouteRecordRaw[] = [
 		name: "sign-in",
 		meta: { layout: "auth" },
 		component: SignInView,
+		beforeEnter: [refreshAuth, redirectAuth],
+	},
+	{
+		path: "/auth/forgot-password",
+		name: "forgot-password",
+		meta: { layout: "auth" },
+		component: ForgotPasswordView,
+		beforeEnter: [refreshAuth, redirectAuth],
+	},
+	{
+		path: "/auth/reset-password",
+		name: "reset-password",
+		meta: { layout: "auth" },
+		component: ResetPasswordView,
 		beforeEnter: [refreshAuth, redirectAuth],
 	},
 	{
