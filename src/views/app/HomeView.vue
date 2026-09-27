@@ -74,7 +74,8 @@
 import ReadingCard from '@/components/app/home/ReadingCard.vue';
 import { useReadingStore } from '@/stores/reading';
 import { storeToRefs } from 'pinia';
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
+import { useEspStore } from '@/stores/esp';
 
 //
 
@@ -94,6 +95,10 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
+
+// --- Reload when another esp is picked
+const { selectedId } = storeToRefs(useEspStore())
+watch(selectedId, onMountedCb)
 
 //
 

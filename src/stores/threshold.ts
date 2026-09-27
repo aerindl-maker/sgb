@@ -3,6 +3,7 @@ import { ThresholdCreateSchema, ThresholdSchema, ThresholdUpdateSchema } from "@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import z from "zod";
+import { useEspStore } from "@/stores/esp";
 
 //
 
@@ -10,12 +11,13 @@ export const useThresholdStore = defineStore("threshold", () => {
 
     //
 
+    const espStore = useEspStore()
     const thresholds = reactive<ThresholdSchema[]>([])
 
     //
 
     const getThresholds = async () => {
-        const res = await api.get<ThresholdSchema[]>("/api/threshold")
+        const res = await api.get<ThresholdSchema[]>("/api/threshold", { params: { espId: espStore.selectedId } })
         const parsed = z.array(ThresholdSchema).parse(res.data)
         parsed.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
         thresholds.splice(0, thresholds.length)
@@ -24,7 +26,7 @@ export const useThresholdStore = defineStore("threshold", () => {
     }
 
     const postThreshold = async (data: ThresholdCreateSchema) => {
-        const res = await api.post<ThresholdSchema>("/api/threshold", data)
+        const res = await api.post<ThresholdSchema>("/api/threshold", { ...data, espId: espStore.selectedId })
         const parsed = ThresholdSchema.parse(res.data)
         thresholds.push(parsed)
         return parsed

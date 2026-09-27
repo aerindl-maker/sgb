@@ -78,7 +78,8 @@ import useToast from '@/composables/use-toast'
 import { ControlActuator, type ControlField } from '@/schemas/ControlSchema'
 import { useControlStore } from '@/stores/control'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useEspStore } from '@/stores/esp'
 
 //
 
@@ -129,6 +130,7 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
+watch(() => useEspStore().selectedId, onMountedCb)
 
 //
 

@@ -6,6 +6,7 @@ const FaultSchema = z.object({
 	id: z.coerce.number().int(),
 	title: z.string().min(1),
 	message: z.string().min(1),
+	espId: z.number().int().nullish(),
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date(),
 })

@@ -3,6 +3,7 @@
         <v-row v-if="isPDFExporting" dense>
             <v-col cols="12" class="pt-5 d-flex flex-column align-center">
                 <h3 class="font-weight-black">SGB Monitoring Report</h3>
+                <span v-if="espStore.esps.length > 1" class="font-weight-bold">{{ espStore.selected?.name }}</span>
                 <span class="text-grey text-center">
                     <span>Reports from &nbsp;</span>
                     <span>{{ dateCmp.format(readingSorted[0]?.createdAt, "fullDateTime12h") }} to &nbsp;</span>
@@ -193,7 +194,8 @@ import ReportExportMenu from '@/components/app/monitor/ReportExportMenu.vue';
 import usePlantHeight from '@/composables/use-plant-height';
 import { useDate, useTheme } from 'vuetify';
 import { useReadingStore } from '@/stores/reading';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useEspStore } from '@/stores/esp';
 import { storeToRefs } from 'pinia';
 import useReport, { type ReportRow } from '@/composables/use-report';
 import { toCentimeters } from '@/utils/plant-height';
@@ -211,6 +213,7 @@ const themeCmp = useTheme()
 // --- Reading
 const readingStore = useReadingStore()
 const { readings, humidities, temperatures, soilMoistures, lights } = storeToRefs(readingStore)
+const espStore = useEspStore()
 const readingSorted = computed(() => [...readings.value].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()))
 
 // --- Plant Height
@@ -246,6 +249,7 @@ type Report = {
 
 const toReadingRow = (r: ReadingSchema): ReportRow => ({
     "ID": r.id,
+    "ESP": espStore.esps.find((e) => e.id == r.espId)?.name ?? "",
     "Reading": r.name,
     "Value": r.value,
     "Unit": r.unit,
@@ -359,6 +363,9 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
+
+// --- Plant heights aren't tied to an esp, only readings reload
+watch(() => espStore.selectedId, () => readingStore.getReadings().catch(() => toastCmp.error("Something went wrong.")))
 
 //
 

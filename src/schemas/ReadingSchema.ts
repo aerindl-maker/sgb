@@ -8,6 +8,7 @@ const ReadingSchema = z.object({
     icon: z.string().min(1),
     unit: z.string().default(""),
     value: z.coerce.number(),
+    espId: z.number().int().nullish(),
     createdAt: z.coerce.date(),
     updatedAt: z.coerce.date(),
 })

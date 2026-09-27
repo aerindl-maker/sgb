@@ -88,7 +88,8 @@
 <script setup lang="ts">
 import { api } from '@/plugins/api'
 import { ThresholdDeleteSchema, ThresholdSchema, type ThresholdCreateSchema, type ThresholdUpdateSchema } from '@/schemas/ThresholdSchema'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useEspStore } from '@/stores/esp';
 import type { SubmissionContext } from 'vee-validate';
 import useToast from '@/composables/use-toast';
 import ThresholdCard from '@/components/admin/thresholds/ThresholdCard.vue';
@@ -106,7 +107,9 @@ const toastCmp = useToast()
 
 // --- Readings
 const readingStore = useReadingStore()
-const readings = computed(() => [...new Set(readingStore.readings.map(r => r.name)).values()])
+// --- A new esp has no readings yet, so the known sensors are always offered
+const knownReadings = ["Temperature", "Humidity", "Soil Moisture", "Light"]
+const readings = computed(() => [...new Set([...knownReadings, ...readingStore.readings.map(r => r.name)]).values()])
 
 // --- Thresholds
 const thresholdStore = useThresholdStore()
@@ -199,6 +202,7 @@ const onMountedCb = async () => {
 }
 
 onMounted(onMountedCb)
+watch(() => useEspStore().selectedId, onMountedCb)
 
 //
 

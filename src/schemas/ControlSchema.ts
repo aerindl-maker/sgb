@@ -14,11 +14,12 @@ const ControlSchema = z.object({
     intake: z.coerce.boolean(),
     exhaust: z.coerce.boolean(),
     light: z.coerce.boolean(),
+    espId: z.number().int().nullish(),
     createdAt: z.coerce.date(),
     updatedAt: z.coerce.date(),
 })
 
-const ControlUpdateSchema = ControlSchema.omit({ id: true, createdAt: true, updatedAt: true }).partial()
+const ControlUpdateSchema = ControlSchema.omit({ id: true, espId: true, createdAt: true, updatedAt: true }).partial()
 
 //
 

@@ -3,6 +3,7 @@ import type { ReportFilterSchema, ReportQuerySchema } from "@/schemas/ReportSche
 import { api } from "@/plugins/api";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
+import { useEspStore } from "@/stores/esp";
 
 //
 
@@ -10,6 +11,7 @@ export const useReadingStore = defineStore("reading", () => {
 
     //
 
+    const espStore = useEspStore()
     const readings = reactive<ReadingSchema[]>([])
     const humidities = computed(() => readings.filter((r) => r.name.toLowerCase().startsWith("humidity")))
     const temperatures = computed(() => readings.filter((r) => r.name.toLowerCase().startsWith("temperature")))
@@ -19,19 +21,19 @@ export const useReadingStore = defineStore("reading", () => {
     //
 
     const getReadings = async () => {
-        const res = await api.get<ReadingSchema[]>("/api/reading")
+        const res = await api.get<ReadingSchema[]>("/api/reading", { params: { espId: espStore.selectedId } })
         readings.splice(0, readings.length)
         readings.push(...res.data.map((r) => ReadingSchema.parse(r)))
         return res.data
     }
 
     const queryReadings = async (name: string, query: ReportQuerySchema) => {
-        const res = await api.get<ReadingSchema[]>("/api/reading", { params: { ...query, name } })
+        const res = await api.get<ReadingSchema[]>("/api/reading", { params: { ...query, name, espId: espStore.selectedId } })
         return res.data.map((r) => ReadingSchema.parse(r))
     }
 
     const countReadings = async (name: string, filter: ReportFilterSchema) => {
-        const params = { name, alpha: filter.alpha ?? undefined, omega: filter.omega ?? undefined }
+        const params = { name, espId: espStore.selectedId, alpha: filter.alpha ?? undefined, omega: filter.omega ?? undefined }
         const res = await api.get<{ count: number }>("/api/reading/count", { params })
         return Number(res.data.count)
     }

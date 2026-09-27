@@ -16,6 +16,7 @@ const AdminThresholdsView = () => import("@/views/admin/AdminThresholdsView.vue"
 const AdminControlsView = () => import("@/views/admin/AdminControlsView.vue")
 const AdminDetectionView = () => import("@/views/admin/AdminDetectionView.vue")
 const AdminSettingsView = () => import("@/views/admin/AdminSettingsView.vue")
+const AdminEspsView = () => import("@/views/admin/AdminEspsView.vue")
 
 //
 
@@ -72,6 +73,13 @@ const routes: RouteRecordRaw[] = [
 		name: "admin settings",
 		meta: { layout: "admin" },
 		component: AdminSettingsView,
+		beforeEnter: [refreshAuth, requireAuth],
+	},
+	{
+		path: "/admin/esps",
+		name: "admin esps",
+		meta: { layout: "admin" },
+		component: AdminEspsView,
 		beforeEnter: [refreshAuth, requireAuth],
 	},
 	{

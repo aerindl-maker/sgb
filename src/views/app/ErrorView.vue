@@ -60,7 +60,8 @@
 import useToast from "@/composables/use-toast"
 import { api } from "@/plugins/api"
 import { FaultSchema } from "@/schemas/FaultSchema"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
+import { useEspStore } from "@/stores/esp"
 import { useDate } from "vuetify"
 import z from "zod"
 
@@ -69,6 +70,7 @@ import z from "zod"
 // --- Utils
 const dateCmp = useDate()
 const toastCmp = useToast()
+const espStore = useEspStore()
 
 // --- Date Range
 const createTodayRange = () => {
@@ -85,6 +87,7 @@ const omega = ref<Date>(defaultRange.omega)
 
 const createFaultParams = () => ({
 	limit: 100,
+	espId: espStore.selectedId,
 	...(alpha.value && { alpha: startOfDay(alpha.value).toISOString() }),
 	...(omega.value && { omega: endOfDay(omega.value).toISOString() }),
 })
@@ -121,6 +124,7 @@ const getFaults = async () => {
 //
 
 onMounted(getFaults)
+watch(() => espStore.selectedId, getFaults)
 
 //
 </script>

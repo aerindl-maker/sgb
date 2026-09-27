@@ -8,6 +8,9 @@
                     height="max(120px, 10dvh)"
                 ></v-sheet>
             </v-sheet>
+            <div class="esp-select position-fixed top-0 right-0 pa-3">
+                <EspSelect></EspSelect>
+            </div>
             <slot></slot>
         </v-main>
         <v-bottom-navigation 
@@ -42,10 +45,15 @@
 </template>
 
 <script setup lang="ts">
-
+import EspSelect from '@/components/EspSelect.vue'
 </script>
 
 <style scoped>
+.esp-select {
+    z-index: 1000;
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
+}
+
 .v-app-bar, .blob {
     z-index: -1;
     background: #008A17;

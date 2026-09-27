@@ -65,6 +65,8 @@ import z from 'zod'
 import { useVersionStore } from './stores/version'
 import type { VersionSchema } from './schemas/Version.Schema'
 import { AppLauncher } from '@capacitor/app-launcher'
+import { useEspStore } from './stores/esp'
+import { DEFAULT_ESP_ID, EspSchema } from './schemas/EspSchema'
 
 //
 
@@ -96,10 +98,16 @@ const isRouting = ref(false)
 // --- Reading
 const websocketCmp = useWebsocket()
 const readingStore = useReadingStore()
+const espStore = useEspStore()
 
+// --- The socket receives every esp, only the selected one is shown
 const onWsReading = (data: ReadingSchema[]) => {
 	const parsed = z.array(ReadingSchema).parse(data)
-	readingStore.readings.push(...parsed)
+	readingStore.readings.push(...parsed.filter(r => (r.espId ?? DEFAULT_ESP_ID) == espStore.selectedId))
+}
+
+const onWsEsp = (data: EspSchema[]) => {
+	z.array(EspSchema).parse(data).forEach(e => espStore.upsert(e))
 }
 
 // --- Push Notifications
@@ -133,8 +141,9 @@ const onMountedCb = async () => {
 	themeCmp.change(savedTheme)
 
 	// --- Reading
-	websocketCmp.connect(`${import.meta.env.VITE_API_URL}/ws/app`)
+	websocketCmp.connect(`${import.meta.env.VITE_API_URL}/ws/app?esp=all`)
 	websocketCmp.subscribe("Reading", "Create", onWsReading)
+	websocketCmp.subscribe("Esp", "Update", onWsEsp)
 
 	// --- Status Bar
 	const native = Capacitor.isNativePlatform()
