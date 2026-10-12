@@ -1,20 +1,16 @@
-import * as Comlink from "comlink"
-import CldDetectionWorker from "@/tasks/cld.detection.task.ts?worker"
-import { ref, toRaw } from "vue"
+import type { Accelerator } from "@litertjs/core"
 import type { DetectionRawSchema } from "@/schemas/DetectionSchema"
+import CldDetectionWorker from "@/tasks/cld.detection.task.ts?worker"
+import * as Comlink from "comlink"
+import { ref, toRaw } from "vue"
 
 //
 
 type CldDetectionWorkerExpose = {
-	load: (url: string, imgsz: number, labels: string[]) => Promise<void>
+	load: (url: string, wasmUrl: string, classes: string[], accelerator?: Accelerator) => Promise<{ accelerator: Accelerator; imageSize: number }>
 	warmup: () => Promise<void>
 	dispose: () => Promise<void>
-	predict: (
-		image: ImageBitmap,
-		minIoU?: number,
-		minScore?: number,
-		maxBoxCount?: number
-	) => Promise<DetectionRawSchema[]>
+	predict: (image: ImageBitmap, minIoU?: number, minScore?: number, maxBoxCount?: number) => Promise<DetectionRawSchema[]>
 }
 
 //
@@ -23,26 +19,42 @@ export default () => {
 	//
 
 	const path = ref("")
-	const size = ref(256)
+	const wasm = ref("/litert/")
+	const size = ref(0)
 	const classes = ref<string[]>([])
+	const loaded = ref(false)
+	const accelerator = ref<Accelerator>()
 
 	let model: Comlink.Remote<CldDetectionWorkerExpose> | undefined
 	let worker: InstanceType<typeof CldDetectionWorker> | undefined
 
 	//
 
-	const load = async (url: string, imgsz?: number, labels?: string[]) => {
+	const dispose = async () => {
+		try {
+			if (model) await model.dispose()
+		} finally {
+			worker?.terminate()
+			model = undefined
+			worker = undefined
+			loaded.value = false
+			accelerator.value = undefined
+			size.value = 0
+		}
+	}
+
+	const load = async (url: string, labels: string[]) => {
 		await dispose()
-
 		path.value = url
-		size.value = imgsz || 256
-		classes.value = labels || []
-
+		classes.value = labels
 		worker = new CldDetectionWorker()
 		model = Comlink.wrap<CldDetectionWorkerExpose>(worker)
 
 		try {
-			await model.load(url, toRaw(size.value), toRaw(classes.value))
+			const details = await model.load(url, toRaw(wasm.value), toRaw(classes.value))
+			accelerator.value = details.accelerator
+			size.value = details.imageSize
+			loaded.value = true
 		} catch (error) {
 			worker.terminate()
 			worker = undefined
@@ -52,34 +64,16 @@ export default () => {
 	}
 
 	const warmup = async () => {
-		if (!model) throw new Error(`AI model not initialized yet.`)
+		if (!model) throw new Error("AI model is not initialized yet.")
 		await model.warmup()
 	}
 
-	const predict = async (img: ImageBitmap, minIoU = 0.9, minScore = 0.25, maxBoxCount = 100) => {
-		if (!model) throw new Error(`AI model not initialized yet.`)
-		return await model.predict(img, minIoU, minScore, maxBoxCount)
-	}
-
-	const dispose = async () => {
-		try {
-			if (model) await model.dispose()
-		} finally {
-			worker?.terminate()
-			model = undefined
-			worker = undefined
-		}
+	const predict = async (image: ImageBitmap, minIoU = 0.9, minScore = 0.25, maxBoxCount = 100) => {
+		if (!model) throw new Error("AI model is not initialized yet.")
+		return await model.predict(Comlink.transfer(image, [image]), minIoU, minScore, maxBoxCount)
 	}
 
 	//
 
-	return {
-		path,
-		size,
-		classes,
-		load,
-		warmup,
-		predict,
-		dispose,
-	}
+	return { accelerator, classes, loaded, path, size, wasm, dispose, load, predict, warmup }
 }

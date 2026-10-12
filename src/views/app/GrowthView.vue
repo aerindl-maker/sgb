@@ -360,6 +360,9 @@ const onClickPauseFrame = async () => {
 }
 
 // --- CLD Scan Detection
+const cldModelPath = import.meta.env.VITE_AI_CLD_URL.replace(/\/+$/, "")
+const cldModelUrl = cldModelPath.endsWith(".tflite") ? cldModelPath : `${cldModelPath}/n256.tflite`
+const cldClasses = import.meta.env.VITE_AI_CLD_CLASSES.split(",").map(label => label.trim())
 const detections = ref<DetectionRawSchema[]>([])
 const cldDetectionCmp = useCldDetection()
 const cldDetectionBusy = ref(false)
@@ -375,11 +378,13 @@ const onDrawCameraFrame = async (canvas: HTMLCanvasElement) => {
 	if (!showDetectionBBox.value) return
 
 	cldDetectionBusy.value = true
-	const bitmap = await createImageBitmap(canvas)
-	const [iou, score, boxes] = [minIoU.value, minScore.value, maxBoxCount.value]
-	detections.value = await cldDetectionCmp.predict(bitmap, iou, score, boxes)
-	cldDetectionBusy.value = false
-	bitmap.close()
+	try {
+		const bitmap = await createImageBitmap(canvas)
+		const [iou, score, boxes] = [minIoU.value, minScore.value, maxBoxCount.value]
+		detections.value = await cldDetectionCmp.predict(bitmap, iou, score, boxes)
+	} finally {
+		cldDetectionBusy.value = false
+	}
 }
 
 const onRenderDetectionFrame = async (canvas: HTMLCanvasElement) => {
@@ -388,12 +393,9 @@ const onRenderDetectionFrame = async (canvas: HTMLCanvasElement) => {
 }
 
 const onMountedCldScanDetection = async () => {
-	const { VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES } = import.meta.env
-	const [folder, classes] = [VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES?.split(", ")]
-
 	cldDetectionLoading.value = true
 	await cldDetectionCmp
-		.load(`${folder}/nano/model.json`, 256, classes)
+		.load(cldModelUrl, cldClasses)
 		.then(() => cldDetectionCmp.warmup())
 		.then(() => {
 			cldDetectionReady.value = true
@@ -443,16 +445,12 @@ const onDrawImageUpload = async (canvas: HTMLCanvasElement) => {
 	console.info(URL.createObjectURL(blob))
 	console.table(uploadDetections.value)
 
-	bitmap.close()
 }
 
 const onMountedCldUploadDetection = async () => {
-	const { VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES } = import.meta.env
-	const [folder, classes] = [VITE_AI_CLD_URL, VITE_AI_CLD_CLASSES?.split(", ")]
-
 	cldUploadDetectionLoading.value = true
 	await cldUploadDetectionCmp
-		.load(`${folder}/large/model.json`, 640, classes)
+		.load(cldModelUrl, cldClasses)
 		.then(() => cldUploadDetectionCmp.warmup())
 		.then(() => {
 			cldUploadDetectionReady.value = true

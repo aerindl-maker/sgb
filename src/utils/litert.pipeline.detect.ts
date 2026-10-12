@@ -6,9 +6,9 @@ import { isWebGPUSupported, loadAndCompile, loadLiteRt, supportsFeature, Tensor 
 
 type Layout = "nchw" | "nhwc"
 
-type Candidate = { x: number; y: number; w: number; h: number; confidence: number }
+type Candidate = { x: number; y: number; w: number; h: number; confidence: number; classIndex: number }
 
-type PlantDetector = {
+type Detector = {
 	accelerator: Accelerator
 	anchorCount: number
 	channelCount: number
@@ -96,12 +96,20 @@ const compile = async (bytes: Uint8Array, accelerator: Accelerator) => {
 const describe = (model: CompiledModel) => {
 	const [input] = model.getInputDetails()
 	const [output] = model.getOutputDetails()
-	if (!input || !output) throw new Error("The plant model exposes no input or output tensor.")
+	if (!input || !output) throw new Error("The detection model exposes no input or output tensor.")
 
 	const inputShape = Array.from(input.shape)
 	const layout: Layout = inputShape[1] === 3 ? "nchw" : "nhwc"
 	const imageSize = (layout === "nchw" ? inputShape[2] : inputShape[1]) || 0
-	if (imageSize <= 0) throw new Error(`Unsupported plant model input shape [${inputShape}].`)
+	const height = layout === "nchw" ? inputShape[2] : inputShape[1]
+	const width = layout === "nchw" ? inputShape[3] : inputShape[2]
+	const channels = layout === "nchw" ? inputShape[1] : inputShape[3]
+	if (inputShape.length !== 4 || inputShape[0] !== 1 || channels !== 3 || imageSize <= 0 || height !== width) {
+		throw new Error(`Unsupported detection model input shape [${inputShape}].`)
+	}
+	if (input.dtype !== "float32" || output.dtype !== "float32") {
+		throw new Error("Detection models must expose float32 input and output tensors.")
+	}
 
 	// YOLO detection heads emit [1, 4 + classes, anchors]; a few exports transpose it.
 	const outputShape = Array.from(output.shape)
@@ -109,54 +117,56 @@ const describe = (model: CompiledModel) => {
 	const transposed = second < first
 	const channelCount = transposed ? second : first
 	const anchorCount = transposed ? first : second
-	if (channelCount < 5) throw new Error(`Unsupported plant model output shape [${outputShape}].`)
+	if (outputShape.length !== 3 || outputShape[0] !== 1 || channelCount < 5 || anchorCount <= 0) {
+		throw new Error(`Unsupported detection model output shape [${outputShape}].`)
+	}
 
 	return { anchorCount, channelCount, imageSize, inputShape, layout, transposed }
 }
 
 //
 
-const load = async (url: string, wasmUrl: string, accelerator?: Accelerator): Promise<PlantDetector> => {
+const load = async (url: string, wasmUrl: string, accelerator?: Accelerator): Promise<Detector> => {
 	runtime ??= bootstrap(wasmUrl)
 	await runtime
 
 	const response = await fetch(url)
-	if (!response.ok) throw new Error(`Failed to download the plant model. (${response.status})`)
+	if (!response.ok) throw new Error(`Failed to download the detection model. (${response.status})`)
 	const bytes = new Uint8Array(await response.arrayBuffer())
 
 	const preferred = accelerator ?? (isWebGPUSupported() ? "webgpu" : "wasm")
 	const compiled = await compile(bytes, preferred)
-	const { transposed, ...described } = describe(compiled.model)
-
-	if (transposed) {
+	try {
+		const { transposed, ...described } = describe(compiled.model)
+		if (transposed) throw new Error("Transposed detection model outputs are not supported.")
+		return { ...described, accelerator: compiled.accelerator, model: compiled.model }
+	} catch (error) {
 		compiled.model.delete()
-		throw new Error("Transposed plant model outputs are not supported.")
+		throw error
 	}
-
-	return { ...described, accelerator: compiled.accelerator, model: compiled.model }
 }
 
-const warmup = async (detector: PlantDetector) => {
+const warmup = async (detector: Detector) => {
 	const elements = detector.inputShape.reduce((total, size) => total * size, 1)
 	await infer(detector, new Float32Array(elements))
 }
 
 /** Runs preprocessing, prediction, and postprocessing to get bounding boxes. */
 const predict = async (
-	detector: PlantDetector,
+	detector: Detector,
 	image: CanvasImageSource,
-	label: string,
+	labels: string[],
 	minIoU = 0.45,
 	minScore = 0.25,
 	maxBoxCount = 100
 ) => {
 	const output = await infer(detector, preprocess(image, detector.imageSize, detector.layout))
-	return postprocess(output, detector, label, minIoU, minScore, maxBoxCount)
+	return postprocess(output, detector, labels, minIoU, minScore, maxBoxCount)
 }
 
-const dispose = (detector: PlantDetector) => detector.model.delete()
+const dispose = (detector: Detector) => detector.model.delete()
 
-const backend = (detector: PlantDetector) => detector.accelerator
+const backend = (detector: Detector) => detector.accelerator
 
 //
 
@@ -169,7 +179,7 @@ const preprocess = (image: CanvasImageSource, imageSize: number, layout: Layout)
 	}
 
 	const context = scratch.getContext("2d", { willReadFrequently: true })
-	if (!context) throw new Error("The plant frame could not be rasterized.")
+	if (!context) throw new Error("The detection frame could not be rasterized.")
 	context.drawImage(image, 0, 0, imageSize, imageSize)
 
 	const { data } = context.getImageData(0, 0, imageSize, imageSize)
@@ -194,7 +204,7 @@ const preprocess = (image: CanvasImageSource, imageSize: number, layout: Layout)
 }
 
 /** Feeds one frame through the interpreter and copies the output back to the CPU. */
-const infer = async (detector: PlantDetector, input: Float32Array) => {
+const infer = async (detector: Detector, input: Float32Array) => {
 	const tensor = Tensor.fromTypedArray(input, detector.inputShape)
 
 	let outputs: Tensor[]
@@ -217,14 +227,19 @@ const infer = async (detector: PlantDetector, input: Float32Array) => {
  * YOLO26 emits [1, 4 + classes, anchors] laid out channel first, where a box is
  * a normalized center point plus a size, and the score is already sigmoid scaled.
  */
-const extract = (output: Float32Array, detector: PlantDetector, minScore: number) => {
+const extract = (output: Float32Array, detector: Detector, minScore: number) => {
 	const { anchorCount, channelCount } = detector
 	const candidates: Candidate[] = []
 
 	for (let anchor = 0; anchor < anchorCount; anchor++) {
 		let confidence = 0
+		let classIndex = 0
 		for (let channel = 4; channel < channelCount; channel++) {
-			confidence = Math.max(confidence, output[channel * anchorCount + anchor] || 0)
+			const score = output[channel * anchorCount + anchor] || 0
+			if (score > confidence) {
+				confidence = score
+				classIndex = channel - 4
+			}
 		}
 		if (confidence < minScore) continue
 
@@ -234,7 +249,7 @@ const extract = (output: Float32Array, detector: PlantDetector, minScore: number
 		const h = output[anchorCount * 3 + anchor] || 0
 		if (w <= 0 || h <= 0) continue
 
-		candidates.push({ x: cx - w / 2, y: cy - h / 2, w, h, confidence })
+		candidates.push({ x: cx - w / 2, y: cy - h / 2, w, h, confidence, classIndex })
 	}
 
 	return candidates
@@ -255,7 +270,7 @@ const nms = (candidates: Candidate[], minIoU: number, maxBoxCount: number) => {
 
 	for (const candidate of [...candidates].sort((a, b) => b.confidence - a.confidence)) {
 		if (kept.length >= maxBoxCount) break
-		if (kept.some(box => intersectionOverUnion(box, candidate) > minIoU)) continue
+		if (kept.some(box => box.classIndex === candidate.classIndex && intersectionOverUnion(box, candidate) > minIoU)) continue
 		kept.push(candidate)
 	}
 
@@ -263,7 +278,7 @@ const nms = (candidates: Candidate[], minIoU: number, maxBoxCount: number) => {
 }
 
 /** Builds normalized, frame-clipped detections out of the surviving boxes. */
-const classify = (candidates: Candidate[], label: string, divisor: number): DetectionRawSchema[] => {
+const classify = (candidates: Candidate[], labels: string[], divisor: number): DetectionRawSchema[] => {
 	const result: DetectionRawSchema[] = []
 
 	for (const candidate of candidates) {
@@ -275,9 +290,12 @@ const classify = (candidates: Candidate[], label: string, divisor: number): Dete
 		const h = y2 - y
 		if (w <= 0 || h <= 0) continue
 
+		const classLabel = labels[candidate.classIndex]
+		if (!classLabel) continue
+
 		result.push({
 			box: { x, y, w, h },
-			class: label,
+			class: classLabel,
 			confidence: Math.min(1, Math.max(0, candidate.confidence)),
 		})
 	}
@@ -288,8 +306,8 @@ const classify = (candidates: Candidate[], label: string, divisor: number): Dete
 /** Combines all postprocessing steps into usable detections. */
 const postprocess = (
 	output: Float32Array,
-	detector: PlantDetector,
-	label: string,
+	detector: Detector,
+	labels: string[],
 	minIoU = 0.45,
 	minScore = 0.25,
 	maxBoxCount = 100
@@ -300,11 +318,11 @@ const postprocess = (
 	const extent = candidates.reduce((largest, box) => Math.max(largest, box.w, box.h), 0)
 	const divisor = extent > 1.5 ? detector.imageSize : 1
 
-	return classify(nms(candidates, minIoU, maxBoxCount), label, divisor)
+	return classify(nms(candidates, minIoU, maxBoxCount), labels, divisor)
 }
 
 //
 
-export type { PlantDetector }
+export type { Detector }
 
 export default { backend, classify, describe, dispose, extract, load, nms, postprocess, predict, preprocess, warmup }
