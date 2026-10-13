@@ -24,21 +24,35 @@
                     color="accent"
                     prepend-icon="mdi-file"
                     :loading="isPDFExporting"
+                    :disabled="isGraphLoading"
                     @click="onClickExportPDF"
                 ></v-btn>
             </v-col>
         </v-row>
         <v-row v-if="!isPDFExporting" dense>
-            <v-col cols="12" sm="6" md="4">
-                <v-select
-                    v-model="graphPeriod"
-                    :items="graphPeriods"
-                    label="Date filter"
+            <v-col cols="6">
+                <v-date-input
+                    v-model="graphFrom"
+                    label="From"
+                    color="accent"
+                    prepend-icon=""
+                    prepend-inner-icon="mdi-calendar"
+                    :max="graphTo ?? undefined"
                     :disabled="isGraphLoading"
-                    :loading="isGraphLoading"
-                    hide-details
-                    @update:model-value="loadGraphs"
-                ></v-select>
+                    clearable
+                ></v-date-input>
+            </v-col>
+            <v-col cols="6">
+                <v-date-input
+                    v-model="graphTo"
+                    label="To"
+                    color="accent"
+                    prepend-icon=""
+                    prepend-inner-icon="mdi-calendar"
+                    :min="graphFrom ?? undefined"
+                    :disabled="isGraphLoading"
+                    clearable
+                ></v-date-input>
             </v-col>
         </v-row>
         <v-row dense>
@@ -58,10 +72,11 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>{{ graphPeriodTitle }} monitoring</span>
+                        <span>{{ graphRangeTitle }}</span>
                     </template>
                     <template #text>
-                        <ReadingChart 
+                        <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
+                        <ReadingChart v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="humidities"
                         ></ReadingChart>
@@ -74,7 +89,7 @@
                         <v-icon color="red">mdi-thermometer</v-icon>
                     </template>
                     <template #title>
-                        <span>Temperature & Humidity</span>
+                        <span>Temperature</span>
                     </template>
                     <template v-if="!isPDFExporting" #append>
                         <ReportExportMenu
@@ -84,10 +99,11 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>{{ graphPeriodTitle }} monitoring</span>
+                        <span>{{ graphRangeTitle }}</span>
                     </template>
                     <template #text>
-                        <ReadingChart 
+                        <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
+                        <ReadingChart v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="temperatures"
                         ></ReadingChart>
@@ -110,10 +126,11 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>{{ graphPeriodTitle }} monitoring</span>
+                        <span>{{ graphRangeTitle }}</span>
                     </template>
                     <template #text>
-                        <ReadingChart 
+                        <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
+                        <ReadingChart v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="soilMoistures"
                         ></ReadingChart>
@@ -136,10 +153,11 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>{{ graphPeriodTitle }} monitoring</span>
+                        <span>{{ graphRangeTitle }}</span>
                     </template>
                     <template #text>
-                        <ReadingChart
+                        <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
+                        <ReadingChart v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="lights"
                         ></ReadingChart>
@@ -162,10 +180,10 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>{{ graphPeriodTitle }} · Estimated plant height</span>
+                        <span>{{ graphRangeTitle }} · Estimated plant height</span>
                     </template>
                     <template #text>
-                        <v-skeleton-loader v-if="plantHeightCmp.loading.value" type="image"></v-skeleton-loader>
+                        <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
                         <v-empty-state
                             v-else-if="plantHeights.length === 0"
                             size="48"
@@ -201,7 +219,7 @@
 </template>
 
 <script setup lang="ts">
-import type { GraphPeriod } from '@/schemas/GraphSchema';
+import type { GraphQuerySchema } from '@/schemas/GraphSchema';
 import useToast from '@/composables/use-toast';
 import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue';
 import useFileSave from '@/composables/use-file-save';
@@ -212,7 +230,7 @@ import ReportExportMenu from '@/components/app/monitor/ReportExportMenu.vue';
 import usePlantHeight from '@/composables/use-plant-height';
 import { useDate, useTheme } from 'vuetify';
 import { useReadingStore } from '@/stores/reading';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useEspStore } from '@/stores/esp';
 import { storeToRefs } from 'pinia';
 import useReport, { type ReportRow } from '@/composables/use-report';
@@ -239,24 +257,29 @@ const plantHeightCmp = usePlantHeight()
 const { heights: plantHeights, centimetersPerPixel: plantCentimetersPerPixel } = plantHeightCmp
 
 // --- Graph Date Filter
-const graphPeriods = [
-    { title: "Today", value: "today" },
-    { title: "This Week", value: "week" },
-    { title: "This Month", value: "month" },
-    { title: "This Year", value: "year" },
-]
-const graphPeriod = ref<GraphPeriod>("today")
-const graphPeriodTitle = computed(() => graphPeriods.find((period) => period.value == graphPeriod.value)?.title)
+const graphFrom = ref<Date | null>(new Date())
+const graphTo = ref<Date | null>(new Date())
+const graphRangeTitle = ref("")
 const isGraphLoading = ref(false)
 
 const loadGraphs = async () => {
+    if (!graphFrom.value || !graphTo.value) return
+
+    const alpha = dateCmp.startOfDay(graphFrom.value) as Date
+    const omega = dateCmp.endOfDay(graphTo.value) as Date
+    if (!Number.isFinite(alpha.getTime()) || !Number.isFinite(omega.getTime())) return
+    if (alpha > omega) return toastCmp.error("From must be on or before To.")
+
     isGraphLoading.value = true
-    const query = { period: graphPeriod.value, timezoneOffset: new Date().getTimezoneOffset() }
+    const query: GraphQuerySchema = { alpha, omega, graph: true }
     await Promise.all([
         readingStore.getReadings(query).catch(() => toastCmp.error("Something went wrong.")),
         plantHeightCmp.list(query).catch(() => toastCmp.error("Something went wrong.")),
     ]).finally(() => isGraphLoading.value = false)
+    graphRangeTitle.value = dateCmp.format(alpha, "keyboardDate") + " – " + dateCmp.format(omega, "keyboardDate")
 }
+
+watch([graphFrom, graphTo], loadGraphs)
 
 // --- PDF Exporting
 const reportCmp = useReport()

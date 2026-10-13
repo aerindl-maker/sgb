@@ -1,12 +1,9 @@
-type GraphPeriod = "today" | "week" | "month" | "year"
-
-//
-
 type GraphQuerySchema = {
-    period?: GraphPeriod
-    timezoneOffset?: number
+    alpha?: Date
+    omega?: Date
+    graph?: boolean
 }
 
 //
 
-export type { GraphPeriod, GraphQuerySchema }
+export type { GraphQuerySchema }
