@@ -1,3 +1,4 @@
+import type { GraphQuerySchema } from "@/schemas/GraphSchema"
 import { api } from "@/plugins/api"
 import {
 	PixelToCmRatioSchema,
@@ -35,11 +36,11 @@ export default () => {
 
 	//
 
-	const list = async () => {
+	const list = async (query: GraphQuerySchema = {}) => {
 		loading.value = true
 
 		try {
-			const response = await api.get("/api/plant/heights", { params: { limit: 100, espId: espStore.selectedId } })
+			const response = await api.get("/api/plant/heights", { params: { ...query, limit: 100, espId: espStore.selectedId } })
 			const data = PlantHeightSchema.array().parse(response.data)
 			heights.value = data
 			return data

@@ -28,6 +28,19 @@
                 ></v-btn>
             </v-col>
         </v-row>
+        <v-row v-if="!isPDFExporting" dense>
+            <v-col cols="12" sm="6" md="4">
+                <v-select
+                    v-model="graphPeriod"
+                    :items="graphPeriods"
+                    label="Date filter"
+                    :disabled="isGraphLoading"
+                    :loading="isGraphLoading"
+                    hide-details
+                    @update:model-value="loadGraphs"
+                ></v-select>
+            </v-col>
+        </v-row>
         <v-row dense>
             <v-col cols="12" lg="6">
                 <v-card class="pt-4" elevation="1">
@@ -45,7 +58,7 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>24-hour monitoring</span>
+                        <span>{{ graphPeriodTitle }} monitoring</span>
                     </template>
                     <template #text>
                         <ReadingChart 
@@ -71,7 +84,7 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>24-hour monitoring</span>
+                        <span>{{ graphPeriodTitle }} monitoring</span>
                     </template>
                     <template #text>
                         <ReadingChart 
@@ -97,7 +110,7 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>24-hour monitoring</span>
+                        <span>{{ graphPeriodTitle }} monitoring</span>
                     </template>
                     <template #text>
                         <ReadingChart 
@@ -123,7 +136,7 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>24-hour monitoring</span>
+                        <span>{{ graphPeriodTitle }} monitoring</span>
                     </template>
                     <template #text>
                         <ReadingChart
@@ -149,7 +162,7 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>Estimated plant height</span>
+                        <span>{{ graphPeriodTitle }} · Estimated plant height</span>
                     </template>
                     <template #text>
                         <v-skeleton-loader v-if="plantHeightCmp.loading.value" type="image"></v-skeleton-loader>
@@ -188,6 +201,7 @@
 </template>
 
 <script setup lang="ts">
+import type { GraphPeriod } from '@/schemas/GraphSchema';
 import useToast from '@/composables/use-toast';
 import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue';
 import useFileSave from '@/composables/use-file-save';
@@ -223,6 +237,26 @@ const readingSorted = computed(() => [...readings.value].sort((a, b) => a.create
 // --- Plant Height
 const plantHeightCmp = usePlantHeight()
 const { heights: plantHeights, centimetersPerPixel: plantCentimetersPerPixel } = plantHeightCmp
+
+// --- Graph Date Filter
+const graphPeriods = [
+    { title: "Today", value: "today" },
+    { title: "This Week", value: "week" },
+    { title: "This Month", value: "month" },
+    { title: "This Year", value: "year" },
+]
+const graphPeriod = ref<GraphPeriod>("today")
+const graphPeriodTitle = computed(() => graphPeriods.find((period) => period.value == graphPeriod.value)?.title)
+const isGraphLoading = ref(false)
+
+const loadGraphs = async () => {
+    isGraphLoading.value = true
+    const query = { period: graphPeriod.value, timezoneOffset: new Date().getTimezoneOffset() }
+    await Promise.all([
+        readingStore.getReadings(query).catch(() => toastCmp.error("Something went wrong.")),
+        plantHeightCmp.list(query).catch(() => toastCmp.error("Something went wrong.")),
+    ]).finally(() => isGraphLoading.value = false)
+}
 
 // --- PDF Exporting
 const reportCmp = useReport()
@@ -359,8 +393,7 @@ const onSubmitExport = async (values: ReportExportSchema) => {
 
 const onMountedCb = async () => {
     await Promise.all([
-        readingStore.getReadings().catch(() => toastCmp.error("Something went wrong.")),
-        plantHeightCmp.list().catch(() => toastCmp.error("Something went wrong.")),
+        loadGraphs(),
         // A missing calibration only falls the estimate back to the frame scale.
         plantHeightCmp.listRatios().catch(() => undefined),
     ])

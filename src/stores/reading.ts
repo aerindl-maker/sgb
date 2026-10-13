@@ -1,3 +1,4 @@
+import type { GraphQuerySchema } from "@/schemas/GraphSchema";
 import { ReadingSchema } from "@/schemas/ReadingSchema";
 import type { ReportFilterSchema, ReportQuerySchema } from "@/schemas/ReportSchema";
 import { api } from "@/plugins/api";
@@ -20,8 +21,8 @@ export const useReadingStore = defineStore("reading", () => {
 
     //
 
-    const getReadings = async () => {
-        const res = await api.get<ReadingSchema[]>("/api/reading", { params: { espId: espStore.selectedId } })
+    const getReadings = async (query: GraphQuerySchema = {}) => {
+        const res = await api.get<ReadingSchema[]>("/api/reading", { params: { ...query, espId: espStore.selectedId } })
         readings.splice(0, readings.length)
         readings.push(...res.data.map((r) => ReadingSchema.parse(r)))
         return res.data
