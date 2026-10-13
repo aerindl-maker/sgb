@@ -76,7 +76,15 @@
                     </template>
                     <template #text>
                         <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
-                        <ReadingChart v-else
+                        <v-empty-state
+                            v-else-if="humidities.length === 0"
+                            class="chart-empty-state"
+                            size="36"
+                            icon="mdi-chart-line"
+                            title="No humidity readings in this date range"
+                        ></v-empty-state>
+                        <ReadingChart
+                            v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="humidities"
                         ></ReadingChart>
@@ -103,7 +111,15 @@
                     </template>
                     <template #text>
                         <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
-                        <ReadingChart v-else
+                        <v-empty-state
+                            v-else-if="temperatures.length === 0"
+                            class="chart-empty-state"
+                            size="36"
+                            icon="mdi-chart-line"
+                            title="No temperature readings in this date range"
+                        ></v-empty-state>
+                        <ReadingChart
+                            v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="temperatures"
                         ></ReadingChart>
@@ -130,7 +146,15 @@
                     </template>
                     <template #text>
                         <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
-                        <ReadingChart v-else
+                        <v-empty-state
+                            v-else-if="soilMoistures.length === 0"
+                            class="chart-empty-state"
+                            size="36"
+                            icon="mdi-chart-line"
+                            title="No soil moisture readings in this date range"
+                        ></v-empty-state>
+                        <ReadingChart
+                            v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="soilMoistures"
                         ></ReadingChart>
@@ -157,7 +181,15 @@
                     </template>
                     <template #text>
                         <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
-                        <ReadingChart v-else
+                        <v-empty-state
+                            v-else-if="lights.length === 0"
+                            class="chart-empty-state"
+                            size="36"
+                            icon="mdi-chart-line"
+                            title="No light readings in this date range"
+                        ></v-empty-state>
+                        <ReadingChart
+                            v-else
                             :color="themeCmp.current.value.colors.accent"
                             :readings="lights"
                         ></ReadingChart>
@@ -180,15 +212,16 @@
                         ></ReportExportMenu>
                     </template>
                     <template #subtitle>
-                        <span>{{ graphRangeTitle }} · Estimated plant height</span>
+                        <span>{{ graphRangeTitle }} - Estimated plant height</span>
                     </template>
                     <template #text>
                         <v-skeleton-loader v-if="isGraphLoading" type="image"></v-skeleton-loader>
                         <v-empty-state
                             v-else-if="plantHeights.length === 0"
-                            size="48"
+                            class="chart-empty-state"
+                            size="36"
                             icon="mdi-chart-line"
-                            title="No height history yet"
+                            title="No height history in this date range"
                         ></v-empty-state>
                         <PlantHeightChart
                             v-else
@@ -276,7 +309,7 @@ const loadGraphs = async () => {
         readingStore.getReadings(query).catch(() => toastCmp.error("Something went wrong.")),
         plantHeightCmp.list(query).catch(() => toastCmp.error("Something went wrong.")),
     ]).finally(() => isGraphLoading.value = false)
-    graphRangeTitle.value = dateCmp.format(alpha, "keyboardDate") + " – " + dateCmp.format(omega, "keyboardDate")
+    graphRangeTitle.value = dateCmp.format(alpha, "keyboardDate") + " to " + dateCmp.format(omega, "keyboardDate")
 }
 
 watch([graphFrom, graphTo], loadGraphs)
@@ -429,5 +462,12 @@ onMounted(onMountedCb)
 </script>
 
 <style scoped>
+.chart-empty-state {
+    padding: 12px;
+}
 
+.chart-empty-state :deep(.v-empty-state__title) {
+    font-size: 0.9375rem;
+    margin-bottom: 3px;
+}
 </style>
