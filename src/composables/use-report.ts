@@ -1,7 +1,8 @@
-import jsPDF from 'jspdf'
+import type { ReadingSchema } from "@/schemas/ReadingSchema"
+import type { ReportFormat } from "@/schemas/ReportSchema"
+import { Chart } from "chart.js/auto"
+import { jsPDF } from "jspdf"
 import Papa from "papaparse"
-import html2canvas from 'html2canvas'
-import type { ReportFormat } from '@/schemas/ReportSchema'
 
 //
 
@@ -76,53 +77,99 @@ export default () => {
         return { base64: btoa(unescape(encodeURIComponent(csv))), mime, extension: format }
     }
 
-    const generatePDF = async (el: HTMLElement) => {
-        // --- Create A4 report
-        const pdf = new jsPDF({
-            orientation: "p",
-            unit: "px",
-            format: "a4",
-            hotfixes: ["px_scaling"],
-        })
+	const generatePDF = (period: string, sections: { title: string, readings: Pick<ReadingSchema, "createdAt" | "value" | "unit">[] }[]) => {
+		const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" })
+		pdf.setProperties({ title: "SGB Monitoring Report" })
 
-        // --- 96px = 1inch
-        const pdfWidth = pdf.internal.pageSize.getWidth()
-        const pdfHeight = pdf.internal.pageSize.getHeight()
+		const margin = 36
+		const pageWidth = pdf.internal.pageSize.getWidth()
+		const pageHeight = pdf.internal.pageSize.getHeight()
+		const width = pageWidth - margin * 2
+		const sectionHeight = 127
 
-        // --- Create canvas of the element
-        const canvas = await html2canvas(el, {
-            useCORS: true,
-            width: el.scrollWidth,
-            height: el.scrollHeight,
-        })
+		// --- Report heading
+		pdf.setFont("helvetica", "bold").setFontSize(22).setTextColor(25)
+		pdf.text("SGB Monitoring Report", margin, 55)
+		pdf.setFont("helvetica", "normal").setFontSize(10).setTextColor(65)
+		const periodLines: string[] = pdf.splitTextToSize(period, width)
+		pdf.text(periodLines, margin, 74)
 
-        // --- Convert canvas to image in ratio
-        const imgData = canvas.toDataURL("image/png")
-        const imgWidth = pdfWidth
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
+		// --- Charts
+		let top = 87 + periodLines.length * 12
+		const tickFormat = new Intl.DateTimeFormat("en-US", {
+			month: "short",
+			day: "numeric",
+			hour: "numeric",
+			minute: "2-digit",
+		})
 
-        // --- Record increments
-        let heightLeft = imgHeight
-        let heightUsed = 0
+		for (const { title, readings } of sections) {
+			if (top + sectionHeight > pageHeight - margin) {
+				pdf.addPage()
+				top = margin
+			}
 
-        // --- Slice the first part of the image
-        pdf.addImage(imgData, "PNG", 0, heightUsed, imgWidth, imgHeight)
-        heightLeft -= pdfHeight
+			pdf.setDrawColor(205).setLineWidth(0.5).line(margin, top, pageWidth - margin, top)
+			pdf.setFont("helvetica", "bold").setFontSize(12).setTextColor(25)
+			const unit = readings[0]?.unit
+			pdf.text(unit ? `${title} (${unit})` : title, margin, top + 16)
 
-        // --- Pull up the image
-        while (heightLeft > 0) {
-            heightUsed -= pdfHeight
-            pdf.addPage()
-            pdf.addImage(imgData, "PNG", 0, heightUsed, imgWidth, imgHeight)
-            heightLeft -= pdfHeight
-        }
+			if (readings.length) {
+				const canvas = document.createElement("canvas")
+				canvas.width = width * 2
+				canvas.height = 200
 
-        return pdf
-    }
+				const data = readings
+					.map(reading => ({ x: reading.createdAt.getTime(), y: reading.value }))
+					.sort((a, b) => a.x - b.x)
+				const chart = new Chart(canvas, {
+					type: "line",
+					data: { datasets: [{ data, borderColor: "#275943", borderWidth: 3, pointRadius: data.length === 1 ? 5 : 0 }] },
+					options: {
+						responsive: false,
+						animation: false,
+						devicePixelRatio: 2,
+						plugins: { legend: { display: false } },
+						scales: {
+							x: {
+								type: "linear",
+								bounds: "data",
+								grid: { display: false },
+								ticks: {
+									color: "#333",
+									font: { size: 18 },
+									maxRotation: 0,
+									maxTicksLimit: 5,
+									callback: value => tickFormat.format(Number(value)),
+								},
+							},
+							y: { ticks: { color: "#333", font: { size: 18 }, maxTicksLimit: 5 } },
+						},
+					},
+				})
 
-    //
+				try {
+					pdf.addImage(chart.toBase64Image(), "PNG", margin, top + 21, width, 100, undefined, "FAST")
+				} finally {
+					chart.destroy()
+				}
+			} else {
+				pdf.setFont("helvetica", "normal").setFontSize(10).setTextColor(65)
+				pdf.text("No readings available.", margin, top + 36)
+			}
 
-    return { generateCsv, generateXlsx, generateReport, generatePDF }
+			top += sectionHeight
+		}
+
+		return pdf
+	}
+
+
+	//
+
+	return { generateCsv, generateXlsx, generateReport, generatePDF }
 }
+
+//
 
 export type { ReportRow }

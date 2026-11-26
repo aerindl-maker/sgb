@@ -1,19 +1,6 @@
 <template>
-    <v-container id="printable">
-        <v-row v-if="isPDFExporting" dense>
-            <v-col cols="12" class="pt-5 d-flex flex-column align-center">
-                <h3 class="font-weight-black">SGB Monitoring Report</h3>
-                <span class="font-weight-bold">{{ espStore.selected?.name }}</span>
-                <span class="text-grey text-center">
-                    <span>Reports from &nbsp;</span>
-                    <span>{{ dateCmp.format(readingSorted[0]?.createdAt, "fullDateTime12h") }} to &nbsp;</span>
-                    <span>
-                        {{ dateCmp.format(readingSorted[readingSorted.length - 1]?.createdAt, "fullDateTime12h") }}.
-                    </span>
-                </span>
-            </v-col>
-        </v-row>
-        <v-row v-if="!isPDFExporting" dense>
+    <v-container>
+        <v-row dense>
             <v-col cols="12">
                 <EspBreadcrumbs :items="[{ title: 'Graphs' }]"></EspBreadcrumbs>
             </v-col>
@@ -29,7 +16,7 @@
                 ></v-btn>
             </v-col>
         </v-row>
-        <v-row v-if="!isPDFExporting" dense>
+        <v-row dense>
             <v-col cols="6">
                 <v-date-input
                     v-model="graphFrom"
@@ -64,7 +51,7 @@
                     <template #title>
                         <span>Humidity</span>
                     </template>
-                    <template v-if="!isPDFExporting" #append>
+                    <template #append>
                         <ReportExportMenu
                             :loading="exportingReport == `humidity`"
                             :disabled="exportingReport != undefined"
@@ -99,7 +86,7 @@
                     <template #title>
                         <span>Temperature</span>
                     </template>
-                    <template v-if="!isPDFExporting" #append>
+                    <template #append>
                         <ReportExportMenu
                             :loading="exportingReport == `temperature`"
                             :disabled="exportingReport != undefined"
@@ -134,7 +121,7 @@
                     <template #title>
                         <span>Soil Moisture</span>
                     </template>
-                    <template v-if="!isPDFExporting" #append>
+                    <template #append>
                         <ReportExportMenu
                             :loading="exportingReport == `soilMoisture`"
                             :disabled="exportingReport != undefined"
@@ -169,7 +156,7 @@
                     <template #title>
                         <span>Light</span>
                     </template>
-                    <template v-if="!isPDFExporting" #append>
+                    <template #append>
                         <ReportExportMenu
                             :loading="exportingReport == `light`"
                             :disabled="exportingReport != undefined"
@@ -204,7 +191,7 @@
                     <template #title>
                         <span>Height History</span>
                     </template>
-                    <template v-if="!isPDFExporting" #append>
+                    <template #append>
                         <ReportExportMenu
                             :loading="exportingReport == `height`"
                             :disabled="exportingReport != undefined"
@@ -263,7 +250,7 @@ import ReportExportMenu from '@/components/app/monitor/ReportExportMenu.vue';
 import usePlantHeight from '@/composables/use-plant-height';
 import { useDate, useTheme } from 'vuetify';
 import { useReadingStore } from '@/stores/reading';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useEspStore } from '@/stores/esp';
 import { storeToRefs } from 'pinia';
 import useReport, { type ReportRow } from '@/composables/use-report';
@@ -281,9 +268,8 @@ const themeCmp = useTheme()
 
 // --- Reading
 const readingStore = useReadingStore()
-const { readings, humidities, temperatures, soilMoistures, lights } = storeToRefs(readingStore)
+const { humidities, temperatures, soilMoistures, lights } = storeToRefs(readingStore)
 const espStore = useEspStore()
-const readingSorted = computed(() => [...readings.value].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()))
 
 // --- Plant Height
 const plantHeightCmp = usePlantHeight()
@@ -320,17 +306,32 @@ const fileSaveCmp = useFileSave()
 const isPDFExporting = ref(false)
 
 const onClickExportPDF = async () => {
-    const el = document.getElementById("printable")
-    if (!el) return
+	if (isPDFExporting.value || isGraphLoading.value) return
 
-    isPDFExporting.value = true
-    await nextTick()
-
-    const pdf = await reportCmp.generatePDF(el)
-    const base64 = pdf.output('datauristring').split(',')[1]!
-
-    await fileSaveCmp.saveFile(base64, "pdf", `report-${Date.now()}.pdf`)
-    isPDFExporting.value = false
+	isPDFExporting.value = true
+	try {
+		const period = [espStore.selected?.name, graphRangeTitle.value].filter(Boolean).join(" | ")
+		const pdf = reportCmp.generatePDF(period, [
+			{ title: "Humidity", readings: humidities.value },
+			{ title: "Temperature", readings: temperatures.value },
+			{ title: "Soil Moisture", readings: soilMoistures.value },
+			{ title: "Light", readings: lights.value },
+			{
+				title: "Height History",
+				readings: plantHeights.value.map(height => ({
+					createdAt: height.createdAt,
+					value: toCentimeters(height.pixelHeight, height.frameHeight, plantCentimetersPerPixel.value),
+					unit: "cm",
+				})),
+			},
+		])
+		const base64 = pdf.output("datauristring").split(",")[1]!
+		await fileSaveCmp.saveFile(base64, "application/pdf", `report-${Date.now()}.pdf`)
+	} catch {
+		toastCmp.error("Could not export the monitoring report.")
+	} finally {
+		isPDFExporting.value = false
+	}
 }
 
 // --- Report Exporting
