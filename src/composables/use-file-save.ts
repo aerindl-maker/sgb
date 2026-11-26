@@ -43,28 +43,32 @@ export default () => {
         saving.value = true
         savingOnNative.value = true
 
-        // --- Save to filesystem
-        await Filesystem.writeFile({
-            path: filename,
-            data: base64,
-            directory: Directory.Cache,
-        })
+        try {
+            // --- Save to filesystem
+            await Filesystem.writeFile({
+                path: filename,
+                data: base64,
+                directory: Directory.Cache,
+            })
 
-        // --- Get reference
-        const fileUri = await Filesystem.getUri({
-            path: filename,
-            directory: Directory.Cache,
-        })
+            // --- Get reference
+            const fileUri = await Filesystem.getUri({
+                path: filename,
+                directory: Directory.Cache,
+            })
 
-        // --- Open native share sheet (Save to Files, Drive, etc.)
-        await Share.share({
-            title: "Save File",
-            url: fileUri.uri,
-            dialogTitle: "Save or Share File",
-        })
-
-        saving.value = false
-        savingOnNative.value = false
+            // --- Open native share sheet (Save to Files, Drive, etc.), dismissing it is not a failure
+            await Share.share({
+                title: "Save File",
+                url: fileUri.uri,
+                dialogTitle: "Save or Share File",
+            }).catch((e) => {
+                if (!/cancel/i.test(e?.message ?? "")) throw e
+            })
+        } finally {
+            saving.value = false
+            savingOnNative.value = false
+        }
     }
 
     //

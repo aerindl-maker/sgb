@@ -7,11 +7,39 @@ import Papa from "papaparse"
 //
 
 type ReportRow = Record<string, string | number | Date>
+type ReportReading = Pick<ReadingSchema, "createdAt" | "value" | "unit">
+type ReportSection = { title: string, readings: ReportReading[] }
 
 const reportMimes: Record<ReportFormat, string> = {
     csv: "text/csv",
     xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
+
+// --- PDF positions and sizes are in points on a letter page
+const pdfLayout = {
+    margin: 36,
+    titleY: 55,
+    periodY: 74,
+    sectionsY: 87,
+    lineHeight: 12,
+    sectionHeight: 127,
+    sectionTitleY: 16,
+    sectionEmptyY: 36,
+    chartY: 21,
+    chartHeight: 100,
+    chartScale: 2,
+    chartFontSize: 18,
+    chartTextColor: "#333",
+} as const
+
+const pdfTickFormat = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+})
+
+const halfDay = 12 * 60 * 60 * 1000
 
 //
 
@@ -77,99 +105,111 @@ export default () => {
         return { base64: btoa(unescape(encodeURIComponent(csv))), mime, extension: format }
     }
 
-	const generatePDF = (period: string, sections: { title: string, readings: Pick<ReadingSchema, "createdAt" | "value" | "unit">[] }[]) => {
-		const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" })
-		pdf.setProperties({ title: "SGB Monitoring Report" })
+    // --- PDF
 
-		const margin = 36
-		const pageWidth = pdf.internal.pageSize.getWidth()
-		const pageHeight = pdf.internal.pageSize.getHeight()
-		const width = pageWidth - margin * 2
-		const sectionHeight = 127
+    // --- Lets the browser repaint (e.g. a loading button) between heavy chart renders
+    const yieldToUi = () => new Promise(resolve => setTimeout(resolve))
 
-		// --- Report heading
-		pdf.setFont("helvetica", "bold").setFontSize(22).setTextColor(25)
-		pdf.text("SGB Monitoring Report", margin, 55)
-		pdf.setFont("helvetica", "normal").setFontSize(10).setTextColor(65)
-		const periodLines: string[] = pdf.splitTextToSize(period, width)
-		pdf.text(periodLines, margin, 74)
+    const renderChartImage = (readings: ReportReading[], width: number, color?: string) => {
+        const canvas = document.createElement("canvas")
+        canvas.width = width * pdfLayout.chartScale
+        canvas.height = pdfLayout.chartHeight * pdfLayout.chartScale
 
-		// --- Charts
-		let top = 87 + periodLines.length * 12
-		const tickFormat = new Intl.DateTimeFormat("en-US", {
-			month: "short",
-			day: "numeric",
-			hour: "numeric",
-			minute: "2-digit",
-		})
+        const data = readings.map(reading => ({ x: reading.createdAt.getTime(), y: reading.value }))
+        const first = data[0]!.x
+        const last = data[data.length - 1]!.x
+        // --- A single timestamp would otherwise repeat the same tick label
+        const padding = first == last ? halfDay : 0
+        const ticks = { color: pdfLayout.chartTextColor, font: { size: pdfLayout.chartFontSize }, maxTicksLimit: 5 }
 
-		for (const { title, readings } of sections) {
-			if (top + sectionHeight > pageHeight - margin) {
-				pdf.addPage()
-				top = margin
-			}
+        const chart = new Chart(canvas, {
+            type: "line",
+            data: { datasets: [{ data, borderColor: color, borderWidth: 3, pointRadius: data.length == 1 ? 5 : 0 }] },
+            options: {
+                responsive: false,
+                animation: false,
+                devicePixelRatio: pdfLayout.chartScale,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        type: "linear",
+                        min: first - padding,
+                        max: last + padding,
+                        grid: { display: false },
+                        ticks: { ...ticks, maxRotation: 0, callback: value => pdfTickFormat.format(Number(value)) },
+                    },
+                    y: { ticks },
+                },
+            },
+        })
 
-			pdf.setDrawColor(205).setLineWidth(0.5).line(margin, top, pageWidth - margin, top)
-			pdf.setFont("helvetica", "bold").setFontSize(12).setTextColor(25)
-			const unit = readings[0]?.unit
-			pdf.text(unit ? `${title} (${unit})` : title, margin, top + 16)
+        try {
+            return chart.toBase64Image()
+        } finally {
+            chart.destroy()
+        }
+    }
 
-			if (readings.length) {
-				const canvas = document.createElement("canvas")
-				canvas.width = width * 2
-				canvas.height = 200
+    const drawHeading = (pdf: jsPDF, period: string, width: number) => {
+        const { margin, titleY, periodY, sectionsY, lineHeight } = pdfLayout
 
-				const data = readings
-					.map(reading => ({ x: reading.createdAt.getTime(), y: reading.value }))
-					.sort((a, b) => a.x - b.x)
-				const chart = new Chart(canvas, {
-					type: "line",
-					data: { datasets: [{ data, borderColor: "#275943", borderWidth: 3, pointRadius: data.length === 1 ? 5 : 0 }] },
-					options: {
-						responsive: false,
-						animation: false,
-						devicePixelRatio: 2,
-						plugins: { legend: { display: false } },
-						scales: {
-							x: {
-								type: "linear",
-								bounds: "data",
-								grid: { display: false },
-								ticks: {
-									color: "#333",
-									font: { size: 18 },
-									maxRotation: 0,
-									maxTicksLimit: 5,
-									callback: value => tickFormat.format(Number(value)),
-								},
-							},
-							y: { ticks: { color: "#333", font: { size: 18 }, maxTicksLimit: 5 } },
-						},
-					},
-				})
+        pdf.setFont("helvetica", "bold").setFontSize(22).setTextColor(25)
+        pdf.text("SGB Monitoring Report", margin, titleY)
 
-				try {
-					pdf.addImage(chart.toBase64Image(), "PNG", margin, top + 21, width, 100, undefined, "FAST")
-				} finally {
-					chart.destroy()
-				}
-			} else {
-				pdf.setFont("helvetica", "normal").setFontSize(10).setTextColor(65)
-				pdf.text("No readings available.", margin, top + 36)
-			}
+        pdf.setFont("helvetica", "normal").setFontSize(10).setTextColor(65)
+        const periodLines: string[] = pdf.splitTextToSize(period, width)
+        pdf.text(periodLines, margin, periodY)
 
-			top += sectionHeight
-		}
+        return sectionsY + periodLines.length * lineHeight
+    }
 
-		return pdf
-	}
+    const drawSection = (pdf: jsPDF, section: ReportSection, top: number, width: number, color?: string) => {
+        const { margin, sectionTitleY, sectionEmptyY, chartY, chartHeight } = pdfLayout
+        const unit = section.readings[0]?.unit
 
+        pdf.setDrawColor(205).setLineWidth(0.5).line(margin, top, margin + width, top)
+        pdf.setFont("helvetica", "bold").setFontSize(12).setTextColor(25)
+        pdf.text(unit ? `${section.title} (${unit})` : section.title, margin, top + sectionTitleY)
 
-	//
+        if (!section.readings.length) {
+            pdf.setFont("helvetica", "normal").setFontSize(10).setTextColor(65)
+            pdf.text("No readings available.", margin, top + sectionEmptyY)
+            return
+        }
 
-	return { generateCsv, generateXlsx, generateReport, generatePDF }
+        const image = renderChartImage(section.readings, width, color)
+        pdf.addImage(image, "PNG", margin, top + chartY, width, chartHeight, undefined, "FAST")
+    }
+
+    // --- Sections are drawn in the given order, with readings expected sorted by time
+    const generatePDF = async (period: string, sections: ReportSection[], color?: string) => {
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" })
+        pdf.setProperties({ title: "SGB Monitoring Report" })
+
+        const { margin, sectionHeight } = pdfLayout
+        const width = pdf.internal.pageSize.getWidth() - margin * 2
+        const bottom = pdf.internal.pageSize.getHeight() - margin
+        let top = drawHeading(pdf, period, width)
+
+        for (const section of sections) {
+            if (top + sectionHeight > bottom) {
+                pdf.addPage()
+                top = margin
+            }
+
+            await yieldToUi()
+            drawSection(pdf, section, top, width, color)
+            top += sectionHeight
+        }
+
+        return pdf
+    }
+
+    //
+
+    return { generateCsv, generateXlsx, generateReport, generatePDF }
 }
 
 //
 
-export type { ReportRow }
+export type { ReportRow, ReportReading, ReportSection }

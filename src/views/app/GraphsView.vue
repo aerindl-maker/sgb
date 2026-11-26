@@ -11,7 +11,7 @@
                     color="accent"
                     prepend-icon="mdi-file"
                     :loading="isPDFExporting"
-                    :disabled="isGraphLoading"
+                    :disabled="isGraphLoading || hasGraphError"
                     @click="onClickExportPDF"
                 ></v-btn>
             </v-col>
@@ -239,25 +239,26 @@
 </template>
 
 <script setup lang="ts">
-import type { GraphQuerySchema } from '@/schemas/GraphSchema';
-import useToast from '@/composables/use-toast';
-import EspBreadcrumbs from '@/components/app/EspBreadcrumbs.vue';
-import useFileSave from '@/composables/use-file-save';
-import PlantHeightChart from '@/components/app/growth/PlantHeightChart.vue';
-import ReadingChart from '@/components/app/monitor/ReadingChart.vue';
-import ReportExportForm from '@/components/app/monitor/ReportExportForm.vue';
-import ReportExportMenu from '@/components/app/monitor/ReportExportMenu.vue';
-import usePlantHeight from '@/composables/use-plant-height';
-import { useDate, useTheme } from 'vuetify';
-import { useReadingStore } from '@/stores/reading';
-import { computed, onMounted, ref, watch } from 'vue';
-import { useEspStore } from '@/stores/esp';
-import { storeToRefs } from 'pinia';
-import useReport, { type ReportRow } from '@/composables/use-report';
-import { toCentimeters } from '@/utils/plant-height';
-import type { ReadingSchema } from '@/schemas/ReadingSchema';
-import type { PlantHeightSchema } from '@/schemas/PlantHeightSchema';
-import type { ReportExportSchema, ReportFilterSchema, ReportFormat, ReportQuerySchema } from '@/schemas/ReportSchema';
+import EspBreadcrumbs from "@/components/app/EspBreadcrumbs.vue"
+import PlantHeightChart from "@/components/app/growth/PlantHeightChart.vue"
+import ReadingChart from "@/components/app/monitor/ReadingChart.vue"
+import ReportExportForm from "@/components/app/monitor/ReportExportForm.vue"
+import ReportExportMenu from "@/components/app/monitor/ReportExportMenu.vue"
+import useFileSave from "@/composables/use-file-save"
+import usePlantHeight from "@/composables/use-plant-height"
+import useReport from "@/composables/use-report"
+import type { ReportReading, ReportRow, ReportSection } from "@/composables/use-report"
+import useToast from "@/composables/use-toast"
+import { useEspStore } from "@/stores/esp"
+import { useReadingStore } from "@/stores/reading"
+import { toCentimeters } from "@/utils/plant-height"
+import type { GraphQuerySchema } from "@/schemas/GraphSchema"
+import type { PlantHeightSchema } from "@/schemas/PlantHeightSchema"
+import type { ReadingSchema } from "@/schemas/ReadingSchema"
+import type { ReportExportSchema, ReportFilterSchema, ReportFormat, ReportQuerySchema } from "@/schemas/ReportSchema"
+import { storeToRefs } from "pinia"
+import { computed, onMounted, ref, watch } from "vue"
+import { useDate, useTheme } from "vuetify"
 
 //
 
@@ -280,6 +281,7 @@ const graphFrom = ref<Date | null>(new Date())
 const graphTo = ref<Date | null>(new Date())
 const graphRangeTitle = ref("")
 const isGraphLoading = ref(false)
+const hasGraphError = ref(false)
 
 const loadGraphs = async () => {
     if (!graphFrom.value || !graphTo.value) return
@@ -291,10 +293,12 @@ const loadGraphs = async () => {
 
     isGraphLoading.value = true
     const query: GraphQuerySchema = { alpha, omega, graph: true }
-    await Promise.all([
-        readingStore.getReadings(query).catch(() => toastCmp.error("Something went wrong.")),
-        plantHeightCmp.list(query).catch(() => toastCmp.error("Something went wrong.")),
-    ]).finally(() => isGraphLoading.value = false)
+    const results = await Promise.allSettled([readingStore.getReadings(query), plantHeightCmp.list(query)])
+        .finally(() => isGraphLoading.value = false)
+
+    // --- A failed fetch leaves older data behind, so the title must not claim the new range
+    hasGraphError.value = results.some(result => result.status == "rejected")
+    if (hasGraphError.value) return toastCmp.error("Something went wrong.")
     graphRangeTitle.value = dateCmp.format(alpha, "keyboardDate") + " to " + dateCmp.format(omega, "keyboardDate")
 }
 
@@ -305,33 +309,35 @@ const reportCmp = useReport()
 const fileSaveCmp = useFileSave()
 const isPDFExporting = ref(false)
 
-const onClickExportPDF = async () => {
-	if (isPDFExporting.value || isGraphLoading.value) return
+const byCreatedAt = (a: ReportReading, b: ReportReading) => a.createdAt.getTime() - b.createdAt.getTime()
 
-	isPDFExporting.value = true
-	try {
-		const period = [espStore.selected?.name, graphRangeTitle.value].filter(Boolean).join(" | ")
-		const pdf = reportCmp.generatePDF(period, [
-			{ title: "Humidity", readings: humidities.value },
-			{ title: "Temperature", readings: temperatures.value },
-			{ title: "Soil Moisture", readings: soilMoistures.value },
-			{ title: "Light", readings: lights.value },
-			{
-				title: "Height History",
-				readings: plantHeights.value.map(height => ({
-					createdAt: height.createdAt,
-					value: toCentimeters(height.pixelHeight, height.frameHeight, plantCentimetersPerPixel.value),
-					unit: "cm",
-				})),
-			},
-		])
-		const base64 = pdf.output("datauristring").split(",")[1]!
-		await fileSaveCmp.saveFile(base64, "application/pdf", `report-${Date.now()}.pdf`)
-	} catch {
-		toastCmp.error("Could not export the monitoring report.")
-	} finally {
-		isPDFExporting.value = false
-	}
+const toHeightReading = (h: PlantHeightSchema): ReportReading => ({
+    createdAt: h.createdAt,
+    value: toCentimeters(h.pixelHeight, h.frameHeight, plantCentimetersPerPixel.value),
+    unit: "cm",
+})
+
+const pdfPeriod = computed(() => [espStore.selected?.name, graphRangeTitle.value].filter(Boolean).join(" | "))
+
+const pdfSections = computed<ReportSection[]>(() => [
+    { title: "Humidity", readings: humidities.value },
+    { title: "Temperature", readings: temperatures.value },
+    { title: "Soil Moisture", readings: soilMoistures.value },
+    { title: "Light", readings: lights.value },
+    { title: "Height History", readings: plantHeights.value.map(toHeightReading) },
+].map(section => ({ ...section, readings: [...section.readings].sort(byCreatedAt) })))
+
+const onClickExportPDF = async () => {
+    isPDFExporting.value = true
+
+    const { err } = await reportCmp.generatePDF(pdfPeriod.value, pdfSections.value, themeCmp.current.value.colors.accent)
+        .then((pdf) => pdf.output("datauristring").split(",")[1]!)
+        .then((base64) => fileSaveCmp.saveFile(base64, "application/pdf", `report-${Date.now()}.pdf`))
+        .then(() => ({ err: undefined }))
+        .catch((err) => ({ err }))
+        .finally(() => isPDFExporting.value = false)
+
+    if (err) toastCmp.error(err?.message || "Could not export the monitoring report.")
 }
 
 // --- Report Exporting
