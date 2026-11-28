@@ -85,6 +85,7 @@ const draw = async () => {
 	sprite.height = app.screen.height
 
 	app.stage.addChild(sprite)
+	app.render()
 	props.onDraw?.(app.canvas)
 }
 
